@@ -31,6 +31,7 @@ import sys, os
 import logging 
 from lxml import etree
 from lxml import objectify
+import inspect
 
 Log = logging.getLogger()
 ch = logging.StreamHandler()
@@ -79,66 +80,6 @@ class HelloTray:
                 data.show_all()
                 data.popup(None, None, gtk.status_icon_position_menu, 3, time, self.statusIcon)
 
-
-class ReadRSS(saxutils.DefaultHandler):
-    def __init__(self):
-        self.inGeocode = 0
-        self.inValueName = 0
-        self.inValue = 0
-        self.inFips = 0
-        self.link = ""
-        self.value = ""
-        self.valueName = ""
-        self.geocodes = set()
-        self.caps = list()
-        self.summary = ""
-        self.inSummary = 0
-
-    def startElement(self, name, attrs):
-        if name == 'link':
-            self.link = attrs.get('href')
-        elif name == "cap:geocode":
-            self.inGeocode = 1
-        elif name == "valueName":
-            self.inValueName = 1
-            self.valueName = ""
-        elif name == "value":
-            self.inValue = 1
-            self.value = ""
-        elif name == 'entry':
-            self.geocodes = set()
-            self.link = ""
-        elif name == 'summary':
-            self.inSummary = 1
-            self.summary = ""
-
-    def characters(self, ch):
-        if self.inGeocode:
-            if self.inValueName:
-                self.valueName = self.valueName + ch
-            elif self.inValue:
-                self.value = self.value + ch
-        elif self.inSummary:
-            self.summary = self.summary + ch
-
-    def endElement(self, name):
-        if name == 'entry':
-            if '006113' in self.geocodes:
-                self.caps.append((self.link, self.summary))
-        elif name == "cap:geocode":
-            self.inGeocode = 0
-        elif name == "valueName":
-            self.inValueName = 0
-            if self.valueName == "FIPS6":
-                self.inFips = 1
-        elif name == "value":
-            if self.inFips:
-                self.inFips = 0
-                for x in self.value.split(' '):
-                    self.geocodes.add(x)
-        elif name == "summary":
-            self.inSummary = 0
-
 def moreInfo_cb(n, action, zzz):
     print "ID: %s" % zzz.identifier
     print "Sender: %s" % zzz.sender
@@ -162,16 +103,65 @@ def moreInfo_cb(n, action, zzz):
     print "AreaDesc: %s" % zzz.areaDesc
     n.close()
 
-def secondParser(file):
+class Entry:
+    def __init__(self):
+        self.caplink = None
+        self.fips = list()
+        self.summary = None
+        
+    def addFips(self, fips):
+        if len(fips) is 0:
+            return
+        elif ' ' in fips:
+            for x in fips.split(' '):
+                self.fips.append(x)
+        else:
+            self.fips.append(fips)
+
+    def checkFips(self, fips):
+        if fips in self.fips:
+            return True
+        else:
+            return False
+
+    def addCapLink(self, link):
+        self.caplink = link
+        
+    def addSummary(self, summary):
+        self.summary = summary
+        
+def feedParser(file):
+    tree = objectify.parse(file)
+    root = tree.getroot()
+    entries = list()
+    
+    if hasattr(root, 'entry'):
+        for entry in root.entry:
+            e = Entry()
+            if hasattr(entry, 'id'):
+                e.addCapLink(entry.id.text)
+            if hasattr(entry, 'summary'):
+                e.addSummary(entry.summary.text)
+            for geocode in entry.findall('{urn:oasis:names:tc:emergency:cap:1.1}geocode'):
+                for child in geocode.getchildren():
+                    if child.tag.endswith('valueName'):
+                        if child.text == 'FIPS6':
+                            e.addFips(child.getnext().text)
+                        else:
+                            Log.warning("Unparsed geoCode of type %s" % child.text)
+            if len(e.fips) is 0:
+                Log.warning("Parsed zero geoCodes.")
+            entries.append(e)
+    return entries
+
+def ReadCAP(file):
     alert = cap.Alert()
     
-    schemafile = open('/home/talisein/waether/CAP-v1.1.xsd')
-    schema = etree.XMLSchema(file=schemafile)
-    parser = objectify.makeparser(remove_blank_text=True, schema=schema)
-#    parser = etree.XMLParser(remove_blank_text=True)
+    parser = objectify.makeparser()
     tree = objectify.parse(file, parser)
     
     root = tree.getroot()
+    assert root.tag.endswith('alert')
     alert.setId(root.identifier.text)
     alert.setSender(root.sender.text)
     alert.setSent(root.sent.text)
@@ -285,32 +275,25 @@ def secondParser(file):
 
 if __name__ == '__main__':
     urls = list()
+    urls.append('http://alerts.weather.gov/cap/ca.php?x=0')
     urls.append('http://edis.oes.ca.gov/index.atom')
     urls.append('http://alerts.weather.gov/cap/ca.php?x=0')
     urls.append('http://earthquake.usgs.gov/eqcenter/recenteqsww/catalogs/caprss7days5.xml')
     rssfeed = urllib.urlopen('http://alerts.weather.gov/cap/ca.php?x=0') 
     
-    # Create a parser
-    rssparser = make_parser()
+    entries = feedParser(rssfeed)
     
-    # Tell the parser we are not interested in XML namespaces
-    rssparser.setFeature(feature_namespaces, 0)
-    
-    # Create the handler
-    rss = ReadRSS()
-    
-    # Tell the parser to use our handler
-    rssparser.setContentHandler(rss)
-    
-    rssparser.parse(rssfeed)
-    rss.caps.reverse()
+    filtered = list()
+    for entry in entries:
+        if entry.checkFips('006113'):
+            filtered.append(entry)
 
-    for (caplink, capsummary) in rss.caps:
+    for entry in filtered:
         
-        alert = secondParser(caplink)
+        alert = ReadCAP(entry.caplink)
         
         if alert.checkArea('FIPS6','006113') or alert.checkArea('UGC','CAZ017'):
-            n = pynotify.Notification(alert.infos[0].event, "<a href='%s'>Link</a>\n%s" % (caplink, capsummary))
+            n = pynotify.Notification(alert.infos[0].event, "<a href='%s'>Link</a>\n%s" % (entry.caplink, entry.summary))
             n.set_urgency(pynotify.URGENCY_NORMAL)
             n.set_timeout(0)
             n.set_category("device")
