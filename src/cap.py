@@ -3,8 +3,8 @@
 #    Copyright (C) 2011 Andrew G. Potter
 #    This file is part of the GNOME Common Alerting Protocol Viewer.
 # 
-#    GNOME Common Alerting Protocol Viewer is free software: you can r
-#    edistribute it and/or modify it under the terms of the GNU General 
+#    GNOME Common Alerting Protocol Viewer is free software: you can
+#    redistribute it and/or modify it under the terms of the GNU General 
 #    Public License as published by the Free Software Foundation, either 
 #    version 3 of the License, or (at your option) any later version.
 # 
@@ -18,17 +18,14 @@
 #    If not, see <http://www.gnu.org/licenses/>.
 #===============================================================================
 
-'''
-Created on Mar 22, 2011
-
-@author: talisein
-'''
-
 from datetime import datetime
 from datetime import timedelta
 from dateutil import parser as dateparser
 import logging 
 import base64
+import glineenc as polylines
+import utils
+from dateutil import zoneinfo
 
 DEFAULT_EXPIRES = timedelta(hours=24) # 24 hours
 
@@ -36,20 +33,20 @@ Log = logging.getLogger()
 
 def unicodeToDatetime(text):
     #2002-05-24T16:49:00-07:00
-    return dateparser.parse(text)
+    return dateparser.parse(text).astimezone(zoneinfo.gettz('UTC'))
 
 class Alert:
         
     STATUS_ACTUAL = u'Actual' # Actionable by all targeted recipients
     STATUS_EXERCISE = u'Exercise' # Actionable only by designated exercise participants; exercise identifier should appear in <note>  
     STATUS_SYSTEM = u'System' # For messages that support alert network internal functions.
-    STATUS_TEST = u'Test' # - Technical testing only, all recipients disregard 
+    STATUS_TEST = u'Test' # Technical testing only, all recipients disregard 
     STATUS_DRAFT = u'Draft' # A preliminary template or draft, not actionable in its current form. 
     
     MSGTYPE_ALERT = u'Alert' # - Initial information requiring attention by targeted recipients
     MSGTYPE_UPDATE = u'Update' # Updates and supercedes the earlier message(s) identified in <references>
     MSGTYPE_CANCEL = u'Cancel' # Cancels the earlier message(s) identified in <references>
-    MSGTYPE_ACK = u'Ack' # - Acknowledges receipt and acceptance of the message(s)) identified in <references>
+    MSGTYPE_ACK = u'Ack' # Acknowledges receipt and acceptance of the message(s)) identified in <references>
     MSGTYPE_ERROR = u'Error' # ” indicates rejection of the message(s) identified in <references>; explanation SHOULD appear in <note>
     
     SCOPE_PUBLIC = u'Public'
@@ -61,6 +58,18 @@ class Alert:
         self.codes = list()
         self.references = list()
         self.infos = list()
+        self.id = None
+        self.version = None
+        self.sender = None
+        self.sent = None
+        self.status = None
+        self.msgType = None
+        self.source = None
+        self.scope = None
+        self.restriction = None
+        self.addresses = None
+        self.note = None
+        self.incidents = None
         
     def checkArea(self, type, code):
         for info in self.infos:
@@ -254,8 +263,6 @@ class Alert:
         # Used to collate multiple messages referring to different aspects of the same incident
         #  If multiple incident identifiers are referenced, they SHALL be separated by whitespace.  Incident names including whitespace SHALL be surrounded by double-quote
         self.incidents = incidents
-        if len(incidents) > 0:
-            Log.info("Incidents field is populated. \"%s\"" % incidents)
         
     @staticmethod 
     def aboutIncidents():
@@ -315,7 +322,20 @@ class Info:
         self.parameters = dict()
         self.resources = list()
         self.areas = list()
-        
+        self.event = None
+        self.urgency = None
+        self.severity = None
+        self.certainty = None
+        self.audience = None
+        self.effective = None
+        self.onset = None
+        self.expires = None
+        self.senderName = None
+        self.headline = None
+        self.description = None
+        self.instruction = None
+        self.web = None
+        self.contact = None
     def setLanguage(self, language):
         if len(language) > 0:
             self.language = language
@@ -541,7 +561,6 @@ class Info:
 
     def addEventCode(self, key, value):
         self.eventCodes[key] = value
-        Log.debug("Added eventCode[%s] = %s" % (key, value))
 
     @staticmethod
     def aboutEventCode():
@@ -617,7 +636,6 @@ class Info:
     
     def addParameter(self, key, value):
         self.parameters[key] = value
-        Log.debug("Added parameter[%s] = %s" % (key, value))
 
     @staticmethod
     def aboutParameter():
@@ -687,11 +705,12 @@ class Area:
     
     def addPolygon(self, polygon):
         if polygon is not None:
-            poly = list()
+            p = list()
             for x in polygon.split(' '):
                 (lat,long) = x.split(',')
-                poly.append((float(lat),float(long)))
-            
+                p.append((float(lat),float(long)))
+            self.polygons.append(p)
+             
     @staticmethod
     def aboutPolygon():
         return u'The geographic polygon is represented by a whitespace-delimited list of [WGS 84] coordinate pairs.'    
@@ -711,12 +730,10 @@ class Area:
             x = self.geoCodes[key]
             x.append(value)
             self.geoCodes[key] = x
-            Log.debug("GeoCode[%s] now %s" % (key, x))
         else:
             x = list()
             x.append(value)
             self.geoCodes[key] = x
-            Log.debug("GeoCode[%s] now %s" % (key, x))
     
     @staticmethod
     def aboutGeoCode():

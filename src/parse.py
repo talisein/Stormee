@@ -3,8 +3,8 @@
 #    Copyright (C) 2011 Andrew G. Potter
 #    This file is part of the GNOME Common Alerting Protocol Viewer.
 # 
-#    GNOME Common Alerting Protocol Viewer is free software: you can r
-#    edistribute it and/or modify it under the terms of the GNU General 
+#    GNOME Common Alerting Protocol Viewer is free software: you can
+#    redistribute it and/or modify it under the terms of the GNU General 
 #    Public License as published by the Free Software Foundation, either 
 #    version 3 of the License, or (at your option) any later version.
 # 
@@ -18,9 +18,6 @@
 #    If not, see <http://www.gnu.org/licenses/>.
 #===============================================================================
 
-from xml.sax import saxutils
-from xml.sax import make_parser
-from xml.sax.handler import feature_namespaces
 import pygtk
 pygtk.require('2.0')
 import gtk
@@ -32,6 +29,10 @@ import logging
 from lxml import etree
 from lxml import objectify
 import inspect
+import glineenc as polylines
+import gtk
+import gtk.glade
+from window import Window
 
 Log = logging.getLogger()
 ch = logging.StreamHandler()
@@ -79,6 +80,21 @@ class HelloTray:
             if data:
                 data.show_all()
                 data.popup(None, None, gtk.status_icon_position_menu, 3, time, self.statusIcon)
+
+class HellowWorldGTK:
+    """This is an Hello World GTK application"""
+
+    def __init__(self):
+        
+        #Set the Glade file
+        self.gladefile = "../glade/CAPViewer.glade"  
+        self.wTree = gtk.glade.XML(self.gladefile) 
+        
+        #Get the Main Window, and connect the "destroy" event
+        self.window = self.wTree.get_widget("mainWindow")
+        if (self.window):
+            self.window.connect("destroy", gtk.main_quit)
+
 
 def moreInfo_cb(n, action, zzz):
     print "ID: %s" % zzz.identifier
@@ -181,14 +197,13 @@ def ReadCAP(file):
     if hasattr(root, 'code'):
         for x in root.code:
             alert.addCode(x.text)
-            Log.debug("Got alert.code %s" % x.text)
     if hasattr(root, 'references'):
         alert.setReferences(root.references.text)
-        Log.debug("Got alert.references %s" % root.references.text)
     if hasattr(root,'incidents'):
         alert.setIncidents(root.incidents.text)
-        Log.debug("Got alert.incidents %s" % root.incidents.text)
-    
+    if hasattr(root,'note'):
+        alert.setNote(root.note)
+        
     
     for info in root.info:
         i = cap.Info()
@@ -280,18 +295,28 @@ if __name__ == '__main__':
     urls.append('http://alerts.weather.gov/cap/ca.php?x=0')
     urls.append('http://earthquake.usgs.gov/eqcenter/recenteqsww/catalogs/caprss7days5.xml')
     rssfeed = urllib.urlopen('http://alerts.weather.gov/cap/ca.php?x=0') 
+    window = Window()
     
+    mycoords = (38.56513,-121.75156)
+    #===========================================================================
+    # alert = ReadCAP('../alert2.cap')
+    # window.acceptCap(alert)
+    # gtk.main()
+    # sys.exit()
+    #===========================================================================
     entries = feedParser(rssfeed)
-    
+  
     filtered = list()
     for entry in entries:
         if entry.checkFips('006113'):
             filtered.append(entry)
 
+
     for entry in filtered:
         
         alert = ReadCAP(entry.caplink)
-        
+        window.acceptCap(alert)
+
         if alert.checkArea('FIPS6','006113') or alert.checkArea('UGC','CAZ017'):
             n = pynotify.Notification(alert.infos[0].event, "<a href='%s'>Link</a>\n%s" % (entry.caplink, entry.summary))
             n.set_urgency(pynotify.URGENCY_NORMAL)
@@ -314,3 +339,4 @@ if __name__ == '__main__':
             
             n.add_action("more info", "More Info", moreInfo_cb, user_data=alert)
             n.show()
+    gtk.main()

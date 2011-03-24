@@ -3,8 +3,8 @@
 #    Copyright (C) 2011 Andrew G. Potter
 #    This file is part of the GNOME Common Alerting Protocol Viewer.
 # 
-#    GNOME Common Alerting Protocol Viewer is free software: you can r
-#    edistribute it and/or modify it under the terms of the GNU General 
+#    GNOME Common Alerting Protocol Viewer is free software: you can
+#    redistribute it and/or modify it under the terms of the GNU General 
 #    Public License as published by the Free Software Foundation, either 
 #    version 3 of the License, or (at your option) any later version.
 # 
@@ -18,6 +18,9 @@
 #    If not, see <http://www.gnu.org/licenses/>.
 #===============================================================================
 
+import logging
+Log = logging.getLogger()
+import glineenc as polylines
 
 def point_inside_polygon(x,y,poly):
     '''
@@ -40,3 +43,12 @@ def point_inside_polygon(x,y,poly):
         p1x,p1y = p2x,p2y
 
     return inside
+
+
+def mapPolygon(polygon, markerCoords='38.56513,-121.75156'):
+    (farin, farout) = polylines.encode_pairs(polygon)
+    baselink = 'http://maps.google.com/maps/api/staticmap?size=800x600&sensor=false'
+    markerlink = '&markers=' + markerCoords
+    pathlink = '&path=color:0x0000ff|weight:5|enc:'
+    Log.debug(baselink +markerlink + pathlink + farin)
+    return baselink + markerlink + pathlink + farin
