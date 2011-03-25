@@ -60,7 +60,7 @@ class Window:
         self.alertTextColumn.pack_start(self.alertTextRenderer, True)
         self.alertTagColumn.pack_start(self.alertTagRenderer, True)
         self.alertTextColumn.set_attributes(self.alertTextRenderer, text=1)
-        self.alertTagColumn.set_attributes(self.alertTagRenderer, text=0, sensitive=0)
+        self.alertTagColumn.set_attributes(self.alertTagRenderer, text=0)
 #        self.alertTagColumn.set_attributes(self.alertTagRenderer, sensitive=1)
         
         self.alertListStore = gtk.ListStore(str, str)
@@ -161,6 +161,8 @@ class Window:
                 for area in info.areas:
                     for polygon in area.polygons:
                         self.__alert('Map link', utils.mapPolygon(polygon))
+                    for circle in area.circles:
+                        self.__alert('Map link', utils.mapCircle(circle))
 
         except AttributeError as detail:
             Log.debug('Invalid class passed to populateCap %s' % type(alert))

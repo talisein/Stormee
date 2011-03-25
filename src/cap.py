@@ -74,10 +74,25 @@ class Alert:
     def checkArea(self, type, code):
         for info in self.infos:
             for area in info.areas:
-                if code in area.geoCodes[type]:
-                    return True
+                if type in area.geoCodes:
+                    if code in area.geoCodes[type]:
+                        return True
         return False
-    
+
+    def checkCoords(self, coords):
+        for info in self.infos:
+            for area in info.areas:
+                for circle in area.circles:
+                    x, y, radius = circle
+                    Log.debug("The distance is %s" % utils.distance((x,y), coords))
+                    if utils.distance((x,y), coords) < radius:
+                        return True
+                for polygon in area.polygons:
+                    x, y = coords
+                    if utils.point_inside_polygon(x, y, polygon):
+                        return True
+        return False
+        
     def setId(self, id):
         self.id = id
     
@@ -253,7 +268,7 @@ class Alert:
                     self.references.append(identifier)
                 else:
                     if len(reference) > 0:
-                        Log.error("Failure to parse references. \"%s\"" % references)
+                        Log.warning("Failure to parse references. \"%s\"" % references.strip())
                     
     @staticmethod
     def aboutReferences():

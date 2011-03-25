@@ -33,7 +33,9 @@ import glineenc as polylines
 import gtk
 import gtk.glade
 from window import Window
+import utils
 
+MAX_ALERT_DISTANCE = 1000 # km.
 Log = logging.getLogger()
 ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
@@ -81,49 +83,13 @@ class HelloTray:
                 data.show_all()
                 data.popup(None, None, gtk.status_icon_position_menu, 3, time, self.statusIcon)
 
-class HellowWorldGTK:
-    """This is an Hello World GTK application"""
-
-    def __init__(self):
-        
-        #Set the Glade file
-        self.gladefile = "../glade/CAPViewer.glade"  
-        self.wTree = gtk.glade.XML(self.gladefile) 
-        
-        #Get the Main Window, and connect the "destroy" event
-        self.window = self.wTree.get_widget("mainWindow")
-        if (self.window):
-            self.window.connect("destroy", gtk.main_quit)
-
-
-def moreInfo_cb(n, action, zzz):
-    print "ID: %s" % zzz.identifier
-    print "Sender: %s" % zzz.sender
-    print "Sent: %s" % zzz.sent
-    print "Status: %s" % zzz.status
-    print "MsgType: %s" % zzz.msgType
-    print "Scope: %s" % zzz.scope
-    print "Note: %s" % zzz.note
-    print "References: %s" % zzz.references
-    print "Severity: %s" % zzz.severity
-    print "Certainty: %s" % zzz.certainty
-    print "SAME: %s" % zzz.same
-    print "Headline: %s" % zzz.headline
-    print "Description: %s" % zzz.description
-    print "Instruction: %s" % zzz.instruction
-    print "UGC: %s" % zzz.ugc
-    print "Vtec: %s" % zzz.vtec
-    print "TML: %s" % zzz.tml
-    print "Effective: %s" % zzz.effective
-    print "Expires: %s" % zzz.expires
-    print "AreaDesc: %s" % zzz.areaDesc
-    n.close()
-
 class Entry:
     def __init__(self):
         self.caplink = None
         self.fips = list()
         self.summary = None
+        self.coords = None
+        self.polygon = None
         
     def addFips(self, fips):
         if len(fips) is 0:
@@ -135,17 +101,29 @@ class Entry:
             self.fips.append(fips)
 
     def checkFips(self, fips):
-        if fips in self.fips:
-            return True
-        else:
-            return False
-
+        return fips in self.fips
+    
     def addCapLink(self, link):
         self.caplink = link
         
     def addSummary(self, summary):
         self.summary = summary
+    
+    def addCoords(self, coords):
+        self.coords = coords
         
+    def checkCoords(self, coords, kilos=MAX_ALERT_DISTANCE):
+        if self.coords is not None: 
+            return utils.distance(coords, self.coords) < kilos
+        elif self.polygon is not None:
+            x, y = coords
+            return utils.point_inside_polygon(x, y, self.polygon)
+        else:
+            return False
+    
+    def addPoly(self, poly):
+        self.polygon = poly
+    
 def feedParser(file):
     tree = objectify.parse(file)
     root = tree.getroot()
@@ -158,6 +136,8 @@ def feedParser(file):
                 e.addCapLink(entry.id.text)
             if hasattr(entry, 'summary'):
                 e.addSummary(entry.summary.text)
+            elif hasattr(entry, 'title'):
+                e.addSummary(entry.title.text.strip())
             for geocode in entry.findall('{urn:oasis:names:tc:emergency:cap:1.1}geocode'):
                 for child in geocode.getchildren():
                     if child.tag.endswith('valueName'):
@@ -165,8 +145,32 @@ def feedParser(file):
                             e.addFips(child.getnext().text)
                         else:
                             Log.warning("Unparsed geoCode of type %s" % child.text)
-            if len(e.fips) is 0:
-                Log.warning("Parsed zero geoCodes.")
+            for latLonBox in entry.findall('{http://www.alerting.net/namespace/index_1.0}latLonBox'):
+                c1, c2 = latLonBox.text.split(' ')
+                c1x, c1y = c1.split(',')
+                c2x, c2y = c2.split(',')
+                c1x = float(c1x)
+                c1y = float(c1y)
+                c2x = float(c2x)
+                c2y = float(c2y)
+                poly = list()
+                poly.append((c1x, c1y))
+                poly.append((c1x, c2y))
+                poly.append((c2x, c2y))
+                poly.append((c2x, c1y))
+                poly.append((c1x, c1y))
+                e.addPoly(poly)
+            entries.append(e)
+    elif hasattr(root, 'channel'):
+        # USGS Earthquake feed
+        for item in root.channel.item:
+            e = Entry()
+            e.addCapLink(item.link.text)
+            e.addSummary(item.title.text)
+            lat = item.find('{http://www.w3.org/2003/01/geo/wgs84_pos#}lat').text
+            long = item.find('{http://www.w3.org/2003/01/geo/wgs84_pos#}long').text
+            e.addCoords((float(lat), float(long)))
+
             entries.append(e)
     return entries
 
@@ -174,118 +178,129 @@ def ReadCAP(file):
     alert = cap.Alert()
     
     parser = objectify.makeparser()
-    tree = objectify.parse(file, parser)
+    try:
+        tree = objectify.parse(file, parser)
+        
+        root = tree.getroot()
+        assert root.tag.endswith('alert')
+        alert.setId(root.identifier.text)
+        alert.setSender(root.sender.text)
+        alert.setSent(root.sent.text)
+        alert.setStatus(root.status.text)
+        alert.setMsgType(root.msgType.text)
     
-    root = tree.getroot()
-    assert root.tag.endswith('alert')
-    alert.setId(root.identifier.text)
-    alert.setSender(root.sender.text)
-    alert.setSent(root.sent.text)
-    alert.setStatus(root.status.text)
-    alert.setMsgType(root.msgType.text)
-
-    if hasattr(root, 'source'):
-        alert.setSource(root.source)
-        Log.debug("Got alert.source %s" % root.source.text)
-    alert.setScope(root.scope.text)
-    if hasattr(root, 'restriction'):
-        alert.setRestriction(root.restriction.text)
-        Log.debug("Got alert.restriction %s" % root.restriction.text)
-    if hasattr(root, 'addresses'):
-        alert.setAddresses(root.addresses.text)
-        Log.debug("Got alert.addresses %s" % root.addresses.text)
-    if hasattr(root, 'code'):
-        for x in root.code:
-            alert.addCode(x.text)
-    if hasattr(root, 'references'):
-        alert.setReferences(root.references.text)
-    if hasattr(root,'incidents'):
-        alert.setIncidents(root.incidents.text)
-    if hasattr(root,'note'):
-        alert.setNote(root.note)
+        if hasattr(root, 'source'):
+            alert.setSource(root.source)
+            Log.debug("Got alert.source %s" % root.source.text)
+        alert.setScope(root.scope.text)
+        if hasattr(root, 'restriction'):
+            alert.setRestriction(root.restriction.text)
+            Log.debug("Got alert.restriction %s" % root.restriction.text)
+        if hasattr(root, 'addresses'):
+            alert.setAddresses(root.addresses.text)
+            Log.debug("Got alert.addresses %s" % root.addresses.text)
+        if hasattr(root, 'code'):
+            for x in root.code:
+                alert.addCode(x.text)
+        if hasattr(root, 'references'):
+            alert.setReferences(root.references.text)
+        if hasattr(root,'incidents'):
+            alert.setIncidents(root.incidents.text)
+        if hasattr(root,'note'):
+            alert.setNote(root.note.text)
+            
         
-    
-    for info in root.info:
-        i = cap.Info()
-        if hasattr(info, 'language'):
-            i.setLanguage(info.language.text)
-        for category in info.category:
-            i.addCategory(category.text)
-        i.setEvent(info.event.text)
-        if hasattr(info, 'responseType'):
-            for x in info.responseType:
-                i.addResponseType(x.text)
-        i.setUrgency(info.urgency.text)
-        i.setSeverity(info.severity.text)
-        i.setCertainty(info.certainty.text)
-        if hasattr(info, 'audience'):
-            i.setAudience(info.audience.text)
-        if hasattr(info, 'eventCode'):
-            for x in info.eventCode:
-                i.addEventCode(x.valueName.text, x.value.text)
-        if hasattr(info, 'effective'):
-            i.setEffective(info.effective.text)
-        else:
-            i.setEffective(root.sent.text)
-        if hasattr(info, 'onset'):
-            i.setOnset(info.onset.text)
-        if hasattr(info, 'expires'):
-            i.setExpires(info.expires.text)
-        else:
-            i.setDefaultExpires()    
-            Log.info("No expiration for CAP %s. Assuming 24 hours." % alert.id)
-        if hasattr(info, 'senderName'):
-            i.setSenderName(info.senderName.text)
-        if hasattr(info, 'headline'):
-            i.setHeadline(info.headline.text)
-        if hasattr(info, 'description'):
-            i.setDescription(info.description.text)
-        if hasattr(info, 'instruction'):
-            i.setInstruction(info.instruction.text)
-        if hasattr(info, 'web'):
-            i.setWeb(info.web.text)
-        if hasattr(info, 'contract'):
-            i.setContact(info.contract.text)
-        if hasattr(info, 'parameter'):
-            for parameter in info.parameter:
-                i.addParameter(parameter.valueName.text, parameter.value.text)
-        
-        if hasattr(info, 'resource'):
-            for resource in info.resource:
-                res = cap.Resource()
-                res.setResourceDesc(resource.resourceDesc.text)
-                res.setMimeType(resource.mimeType.text)
-                if hasattr(resource, 'size'):
-                    res.setSize(resource.size.text)
-                if hasattr(resource, 'uri'):
-                    res.setUri(resource.uri.text)
-                if hasattr(resource, 'derefUri'):
-                    res.setDerefUri(resource.derefUri.text)
-                if hasattr(resource, 'digest'):
-                    res.setDigest(resource.digest.text)
-                i.addResource(res)
-        
-        if hasattr(info, 'area'):
-            for area in info.area:
-                a = cap.Area()
-                a.setAreaDesc(area.areaDesc.text)
-                if hasattr(area, 'polygon'):
-                    for polygon in area.polygon:
-                        a.addPolygon(polygon.text)
-                if hasattr(area, 'circle'):
-                    for circle in area.circle:
-                        a.addCircle(circle.text)
-                if hasattr(area, 'geocode'):
-                    for geocode in area.geocode:
-                        a.addGeoCode(geocode.valueName.text, geocode.value.text)
-                if hasattr(area, 'altitude'):
-                    a.setAltitude(area.altitude.text)
-                if hasattr(area, 'ceiling'):
-                    a.setCeiling(area.ceiling.text)    
-                i.addArea(a)
-        alert.addInfo(i)
-    return alert
-                
+        for info in root.info:
+            i = cap.Info()
+            if hasattr(info, 'language'):
+                i.setLanguage(info.language.text)
+            for category in info.category:
+                i.addCategory(category.text)
+            i.setEvent(info.event.text)
+            if hasattr(info, 'responseType'):
+                for x in info.responseType:
+                    i.addResponseType(x.text)
+            i.setUrgency(info.urgency.text)
+            i.setSeverity(info.severity.text)
+            i.setCertainty(info.certainty.text)
+            if hasattr(info, 'audience'):
+                i.setAudience(info.audience.text)
+            if hasattr(info, 'eventCode'):
+                for x in info.eventCode:
+                    i.addEventCode(x.valueName.text, x.value.text)
+            if hasattr(info, 'effective'):
+                i.setEffective(info.effective.text)
+            else:
+                i.setEffective(root.sent.text)
+            if hasattr(info, 'onset'):
+                i.setOnset(info.onset.text)
+            if hasattr(info, 'expires'):
+                i.setExpires(info.expires.text)
+            else:
+                i.setDefaultExpires()    
+                Log.info("No expiration for CAP %s. Assuming 24 hours." % alert.id)
+            if hasattr(info, 'senderName'):
+                i.setSenderName(info.senderName.text)
+            if hasattr(info, 'headline'):
+                i.setHeadline(info.headline.text)
+            if hasattr(info, 'description'):
+                i.setDescription(info.description.text)
+            if hasattr(info, 'instruction'):
+                i.setInstruction(info.instruction.text)
+            if hasattr(info, 'web'):
+                i.setWeb(info.web.text)
+            if hasattr(info, 'contract'):
+                i.setContact(info.contract.text)
+            if hasattr(info, 'parameter'):
+                for parameter in info.parameter:
+                    try:
+                        i.addParameter(parameter.valueName.text, parameter.value.text)
+                    except AttributeError:
+                        # is this a USGS feed?
+                        if parameter.text.count('=') is 1:
+                            valueName, value = parameter.text.split('=')
+                            i.addParameter(valueName, value)
+                        else:
+                            raise
+            if hasattr(info, 'resource'):
+                for resource in info.resource:
+                    res = cap.Resource()
+                    res.setResourceDesc(resource.resourceDesc.text)
+                    res.setMimeType(resource.mimeType.text)
+                    if hasattr(resource, 'size'):
+                        res.setSize(resource.size.text)
+                    if hasattr(resource, 'uri'):
+                        res.setUri(resource.uri.text)
+                    if hasattr(resource, 'derefUri'):
+                        res.setDerefUri(resource.derefUri.text)
+                    if hasattr(resource, 'digest'):
+                        res.setDigest(resource.digest.text)
+                    i.addResource(res)
+            
+            if hasattr(info, 'area'):
+                for area in info.area:
+                    a = cap.Area()
+                    a.setAreaDesc(area.areaDesc.text)
+                    if hasattr(area, 'polygon'):
+                        for polygon in area.polygon:
+                            a.addPolygon(polygon.text)
+                    else:
+                        Log.debug("No polygon")
+                    if hasattr(area, 'circle'):
+                        for circle in area.circle:
+                            a.addCircle(circle.text)
+                    if hasattr(area, 'geocode'):
+                        for geocode in area.geocode:
+                            a.addGeoCode(geocode.valueName.text, geocode.value.text)
+                    if hasattr(area, 'altitude'):
+                        a.setAltitude(area.altitude.text)
+                    if hasattr(area, 'ceiling'):
+                        a.setCeiling(area.ceiling.text)    
+                    i.addArea(a)
+            alert.addInfo(i)
+        return alert
+    except etree.XMLSyntaxError as e:
+        Log.error("Broken link %s" % file) 
 #    print etree.tostring(tree['alert'], pretty_print=True)
 
 if __name__ == '__main__':
@@ -294,12 +309,14 @@ if __name__ == '__main__':
     urls.append('http://edis.oes.ca.gov/index.atom')
     urls.append('http://alerts.weather.gov/cap/ca.php?x=0')
     urls.append('http://earthquake.usgs.gov/eqcenter/recenteqsww/catalogs/caprss7days5.xml')
-    rssfeed = urllib.urlopen('http://alerts.weather.gov/cap/ca.php?x=0') 
+    rssfeed = urllib.urlopen('http://edis.oes.ca.gov/index.atom') 
     window = Window()
     
     mycoords = (38.56513,-121.75156)
+ #   mycoords = (-15,-171)
     #===========================================================================
-    # alert = ReadCAP('../alert2.cap')
+    # file = open('../alert3.cap')
+    # alert = ReadCAP(file)
     # window.acceptCap(alert)
     # gtk.main()
     # sys.exit()
@@ -310,17 +327,33 @@ if __name__ == '__main__':
     for entry in entries:
         if entry.checkFips('006113'):
             filtered.append(entry)
+        if entry.checkCoords(mycoords):
+            filtered.append(entry)
 
-
+    
+    #===========================================================================
+    # filtered = list()
+    # a = Entry()
+    # a.addCoords(mycoords)
+    # a.addCapLink('../alert3.cap')
+    # a.addSummary('Testing only')
+    # filtered.append(a)
+    #===========================================================================
     for entry in filtered:
         
         alert = ReadCAP(entry.caplink)
-        window.acceptCap(alert)
-
-        if alert.checkArea('FIPS6','006113') or alert.checkArea('UGC','CAZ017'):
-            n = pynotify.Notification(alert.infos[0].event, "<a href='%s'>Link</a>\n%s" % (entry.caplink, entry.summary))
+        if alert is None:
+            continue
+        
+        if alert.checkArea('FIPS6','006113') or alert.checkArea('UGC','CAZ017') or alert.checkCoords(mycoords):
+            window.acceptCap(alert)
+            if alert.infos[0].description is None:
+                continue
+            if alert.infos[0].event is None:
+                alert.infos[0].event = "UNTITLED EVENT"
+            n = pynotify.Notification(alert.infos[0].event, "<a href='%s'>Link</a>\n%s" % (entry.caplink, alert.infos[0].description[0:400]))
             n.set_urgency(pynotify.URGENCY_NORMAL)
-            n.set_timeout(0)
+            #n.set_timeout(0)
             n.set_category("device")
             helper = gtk.Button()
      
@@ -329,7 +362,7 @@ if __name__ == '__main__':
                 i = gtk.STOCK_DIALOG_WARNING
             elif alert.infos[0].severity is cap.Info.SEVERITY_MINOR:
                 i = gtk.STOCK_DIALOG_INFO
-            elif alert.infos[0].severity is cap.Info.SEVERITY_SEVERE:
+            elif alert.infos[0].severity is cap.Info.SEVERITY_SEVERE or alert.infos[0].severity is cap.Info.SEVERITY_EXTREME:
                 i = gtk.STOCK_DIALOG_ERROR
             else:
                 i = gtk.STOCK_DIALOG_QUESTION
@@ -337,6 +370,5 @@ if __name__ == '__main__':
             icon = helper.render_icon(i, gtk.ICON_SIZE_DIALOG)
             n.set_icon_from_pixbuf(icon)
             
-            n.add_action("more info", "More Info", moreInfo_cb, user_data=alert)
-            n.show()
+            #n.show()
     gtk.main()

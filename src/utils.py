@@ -21,6 +21,7 @@
 import logging
 Log = logging.getLogger()
 import glineenc as polylines
+import math
 
 def point_inside_polygon(x,y,poly):
     '''
@@ -52,3 +53,46 @@ def mapPolygon(polygon, markerCoords='38.56513,-121.75156'):
     pathlink = '&path=color:0x0000ff|weight:5|enc:'
     Log.debug(baselink +markerlink + pathlink + farin)
     return baselink + markerlink + pathlink + farin
+
+
+def mapCircle(circle, markerCoords='38.56513,-121.75156'):
+    x, y, radius = circle
+    
+    baselink = 'http://maps.google.com/maps/api/staticmap?size=800x600&sensor=false'
+    markerlink = '&markers=' + markerCoords + '|' + str(x) + ',' + str(y)
+    pathlink = '&path=color:0x0000ff|weight:5|enc:'
+    lat = y
+    lng = x
+    d2r = 3.14159 / 180
+    r2d = 180/3.14159
+    clat = radius/6371 * r2d
+    clng = clat/math.cos(lat*d2r)
+    poly = list()
+    for z in range(20):
+        theta = 3.14159 * (float(z) / 10)
+        Cx = lng + (clng * math.cos(theta))
+        Cy = lat + (clat * math.sin(theta))
+        poly.append((Cx,Cy))
+    poly.append(poly[0])
+    (farin, farout) = polylines.encode_pairs(poly)
+
+    Log.debug(baselink +markerlink + pathlink + farin)
+    return baselink + markerlink + pathlink + farin
+
+def distance(origin, destination):
+    '''
+    Haversine formula example in Python
+    Author: Wayne Dyck
+    '''
+    lat1, lon1 = origin
+    lat2, lon2 = destination
+    radius = 6371 # km
+
+    dlat = math.radians(lat2-lat1)
+    dlon = math.radians(lon2-lon1)
+    a = math.sin(dlat/2) * math.sin(dlat/2) + math.cos(math.radians(lat1)) \
+        * math.cos(math.radians(lat2)) * math.sin(dlon/2) * math.sin(dlon/2)
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+    d = radius * c
+
+    return d
