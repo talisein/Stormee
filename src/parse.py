@@ -20,19 +20,10 @@
 
 import pygtk
 pygtk.require('2.0')
-import gtk
-import pynotify
-import urllib
 import cap
-import sys, os
 import logging 
 from lxml import etree
 from lxml import objectify
-import inspect
-import glineenc as polylines
-import gtk
-import gtk.glade
-from window import Window
 import utils
 
 MAX_ALERT_DISTANCE = 1000 # km.
@@ -42,46 +33,6 @@ ch.setLevel(logging.DEBUG)
 Log.addHandler(ch)
 Log.setLevel(logging.DEBUG)
 
-class HelloTray:
-
-    def __init__(self):
-        self.statusIcon = gtk.StatusIcon()
-        self.statusIcon.set_from_stock(gtk.STOCK_ABOUT)
-        self.statusIcon.set_visible(True)
-        self.statusIcon.set_tooltip("Hello World")
-        
-        self.menu = gtk.Menu()
-        self.menuItem = gtk.ImageMenuItem(gtk.STOCK_EXECUTE)
-        self.menuItem.connect('activate', self.execute_cb, self.statusIcon)
-        self.menu.append(self.menuItem)
-        self.menuItem = gtk.ImageMenuItem(gtk.STOCK_QUIT)
-        self.menuItem.connect('activate', self.quit_cb, self.statusIcon)
-        self.menu.append(self.menuItem)
-        
-        self.statusIcon.connect('popup-menu', self.popup_menu_cb, self.menu)
-        self.statusIcon.set_visible(1)
-        
-        gtk.main()
-    
-    def execute_cb(self, widget, event, data=None):
-        window = gtk.Window(gtk.WINDOW_TOPLEVEL)
-        window.set_border_width(10)
-        
-        button = gtk.Button("Hello World")
-        button.connect_object("clicked", gtk.Widget.destroy, window)
-        
-        window.add(button)
-        button.show()
-        window.show()
-    
-    def quit_cb(self, widget, data=None):
-        gtk.main_quit()
-    
-    def popup_menu_cb(self, widget, button, time, data=None):
-        if button == 3:
-            if data:
-                data.show_all()
-                data.popup(None, None, gtk.status_icon_position_menu, 3, time, self.statusIcon)
 
 class Entry:
     def __init__(self):
@@ -90,6 +41,7 @@ class Entry:
         self.summary = None
         self.coords = None
         self.polygon = None
+        self.fromFeed = None
         
     def addFips(self, fips):
         if len(fips) is 0:
@@ -132,6 +84,7 @@ def feedParser(file):
     if hasattr(root, 'entry'):
         for entry in root.entry:
             e = Entry()
+            e.fromFeed = str(file)
             if hasattr(entry, 'id'):
                 e.addCapLink(entry.id.text)
             if hasattr(entry, 'summary'):
@@ -299,76 +252,5 @@ def ReadCAP(file):
                     i.addArea(a)
             alert.addInfo(i)
         return alert
-    except etree.XMLSyntaxError as e:
+    except etree.XMLSyntaxError:
         Log.error("Broken link %s" % file) 
-#    print etree.tostring(tree['alert'], pretty_print=True)
-
-if __name__ == '__main__':
-    urls = list()
-    urls.append('http://alerts.weather.gov/cap/ca.php?x=0')
-    urls.append('http://edis.oes.ca.gov/index.atom')
-    urls.append('http://alerts.weather.gov/cap/ca.php?x=0')
-    urls.append('http://earthquake.usgs.gov/eqcenter/recenteqsww/catalogs/caprss7days5.xml')
-    rssfeed = urllib.urlopen('http://edis.oes.ca.gov/index.atom') 
-    window = Window()
-    
-    mycoords = (38.56513,-121.75156)
- #   mycoords = (-15,-171)
-    #===========================================================================
-    # file = open('../alert3.cap')
-    # alert = ReadCAP(file)
-    # window.acceptCap(alert)
-    # gtk.main()
-    # sys.exit()
-    #===========================================================================
-    entries = feedParser(rssfeed)
-  
-    filtered = list()
-    for entry in entries:
-        if entry.checkFips('006113'):
-            filtered.append(entry)
-        if entry.checkCoords(mycoords):
-            filtered.append(entry)
-
-    
-    #===========================================================================
-    # filtered = list()
-    # a = Entry()
-    # a.addCoords(mycoords)
-    # a.addCapLink('../alert3.cap')
-    # a.addSummary('Testing only')
-    # filtered.append(a)
-    #===========================================================================
-    for entry in filtered:
-        
-        alert = ReadCAP(entry.caplink)
-        if alert is None:
-            continue
-        
-        if alert.checkArea('FIPS6','006113') or alert.checkArea('UGC','CAZ017') or alert.checkCoords(mycoords):
-            window.acceptCap(alert)
-            if alert.infos[0].description is None:
-                continue
-            if alert.infos[0].event is None:
-                alert.infos[0].event = "UNTITLED EVENT"
-            n = pynotify.Notification(alert.infos[0].event, "<a href='%s'>Link</a>\n%s" % (entry.caplink, alert.infos[0].description[0:400]))
-            n.set_urgency(pynotify.URGENCY_NORMAL)
-            #n.set_timeout(0)
-            n.set_category("device")
-            helper = gtk.Button()
-     
-        
-            if alert.infos[0].severity is cap.Info.SEVERITY_MODERATE:
-                i = gtk.STOCK_DIALOG_WARNING
-            elif alert.infos[0].severity is cap.Info.SEVERITY_MINOR:
-                i = gtk.STOCK_DIALOG_INFO
-            elif alert.infos[0].severity is cap.Info.SEVERITY_SEVERE or alert.infos[0].severity is cap.Info.SEVERITY_EXTREME:
-                i = gtk.STOCK_DIALOG_ERROR
-            else:
-                i = gtk.STOCK_DIALOG_QUESTION
-            
-            icon = helper.render_icon(i, gtk.ICON_SIZE_DIALOG)
-            n.set_icon_from_pixbuf(icon)
-            
-            #n.show()
-    gtk.main()

@@ -28,18 +28,63 @@ import logging
 import datetime
 import dateutil
 import sys
+import webkit
+import pango
+import glib
+
 
 Log = logging.getLogger()
 
+class KeyTable(gtk.Table):
+    def __init__(self, rows=1, columns=2, homo=False):
+        gtk.Table.__init__(self, rows, columns, homo)
+        self.rows = rows
+        self.columns = columns
+        self.set_sensitive(True)
+        
+        
+    def add(self, key, value, keyTooltip=None, valueTooltip=None, markup=None):
+        keyTag = gtk.Label()
+        valueTag = gtk.Label()
+        keyTag.set_alignment(1.0, 0.5)
+        valueTag.set_alignment(0.0, 0.5)
+        valueTag.set_selectable(True)
+#        valueTag.set_ellipsize(pango.ELLIPSIZE_END)
+        
+        valueTag.set_use_markup(markup is not None)
+        valueTag.set_single_line_mode(True)
+        keyTag.set_single_line_mode(True)
+        keyTag.set_text(key)
+        valueTag.set_text(value)
+        if markup is not None:
+            valueTag.set_markup(glib.markup_escape_text(markup))
+            valueTag.set_use_markup(True)
+        valueTag.set_sensitive(True)
+        if keyTooltip is not None:
+            keyTag.set_tooltip_text(keyTooltip)
+        if valueTooltip is not None:
+            valueTag.set_tooltip_text(valueTooltip)
+        self.rows += 1
+        self.resize(self.rows, self.columns)
+        self.attach(keyTag, 0, 1, self.rows - 1, self.rows, xoptions=gtk.FILL, xpadding=5)
+        self.attach(valueTag, 1, 2, self.rows -1, self.rows, xpadding=5)
+        self.show_all()
 
+    def clear(self):
+        self.resize(1, 2)
+        self.foreach(self.__delChild)
+
+    def __delChild(self, child):
+        self.remove(child)
+        
 class Window:
-    def __alert(self, tag, text):
+    def __alert(self, tag, text, keyTooltip=None, valueTooltip=None, markup=None):
         if text is not None:
-            self.alertListStore.append([tag, text])      
+            self.keyTable.add(tag + ':', text, keyTooltip, valueTooltip, markup)
                
-    def __alerttz(self, tag, time):
+    def __alerttz(self, tag, time, keyTooltip=None, valueTooltip=None, markup=None):
         if time is not None and isinstance(time, datetime.datetime):
-            self.alertListStore.append([tag, time.astimezone(dateutil.tz.tzlocal()).strftime("%A (%b %d), %I:%M:%S %p %Z")])
+            self.keyTable.add(tag + ':', time.astimezone(dateutil.tz.tzlocal()).strftime("%A (%b %d), %I:%M:%S %p %Z"), keyTooltip, valueTooltip, markup)
 
     def __init__(self):
         self.alerts = dict()
@@ -52,31 +97,26 @@ class Window:
         
         self.capTitleBuffer = builder.get_object("capTitleBuffer")
 
-        self.alertTreeView = builder.get_object("alertTreeview")
-        self.alertTagColumn = gtk.TreeViewColumn('Tag')
-        self.alertTextColumn = gtk.TreeViewColumn('Text')
-        self.alertTagRenderer = gtk.CellRendererText()
-        self.alertTextRenderer = gtk.CellRendererText()
-        self.alertTextColumn.pack_start(self.alertTextRenderer, True)
-        self.alertTagColumn.pack_start(self.alertTagRenderer, True)
-        self.alertTextColumn.set_attributes(self.alertTextRenderer, text=1)
-        self.alertTagColumn.set_attributes(self.alertTagRenderer, text=0)
-#        self.alertTagColumn.set_attributes(self.alertTagRenderer, sensitive=1)
-        
-        self.alertListStore = gtk.ListStore(str, str)
-        self.alertTreeView.append_column(self.alertTagColumn)
-        self.alertTreeView.append_column(self.alertTextColumn)
-        self.alertTreeView.set_model(self.alertListStore)
-
-        self.alertTagColumn.set_clickable(True)
-        
+        self.keyValueWindow = builder.get_object("keyValueScrolledWindow")
+        self.keyTable = KeyTable() 
+        self.keyValueWindow.add_with_viewport(self.keyTable)
+       
         self.infoTextBuffer = builder.get_object("infoTextBuffer")
+        
+        self.midLeftVbox = builder.get_object("midLeftVbox")
+        self.webview = webkit.WebView()
+        
+        self.midLeftVbox.pack_start(self.webview, False, True, 1)
+        self.webview.show()
+                
         self.window.show()
+        
+        
         
             
     def on_mainWindow_destroy(self, widget, data=None):
-        gtk.main_quit()
-        
+        pass
+    
     def acceptCap(self, alert):
         if isinstance(alert, cap.Alert):
             self.alerts[alert.id] = alert
@@ -106,46 +146,47 @@ class Window:
     def populateCap(self, alert):
         try:
             self.capTitleBuffer.set_text(alert.id)
-            self.alertListStore.clear()
+            self.keyTable.clear()
+            self.__alert('Message ID', alert.id, cap.Alert.aboutId())
             self.__alert('Version', alert.version)
-            self.__alert('Sender', alert.sender)
-            self.__alerttz('Sent', alert.sent)
-            self.__alert('Status', alert.status)
-            self.__alert('Message Type', alert.msgType)
-            self.__alert('Source', alert.source)
-            self.__alert('Scope', alert.scope)
-            self.__alert('Restriction', alert.restriction)
-            self.__alert('Addresses', alert.addresses)
-            self.__alert('Note', alert.note)
-            self.__alert('Incidents', alert.incidents)
+            self.__alert('Sender', alert.sender,cap.Alert.aboutSender())
+            self.__alerttz('Sent', alert.sent,cap.Alert.aboutSent())
+            self.__alert('Status', alert.status, cap.Alert.aboutStatus(), cap.Alert.aboutStatus(alert.status))
+            self.__alert('Message Type', alert.msgType, cap.Alert.aboutMsgType(), cap.Alert.aboutMsgType(alert.msgType))
+            self.__alert('Source', alert.source, cap.Alert.aboutSource())
+            self.__alert('Scope', alert.scope, cap.Alert.aboutScope(), cap.Alert.aboutScope(alert.scope))
+            self.__alert('Restriction', alert.restriction, cap.Alert.aboutRestriction())
+            self.__alert('Addresses', alert.addresses, cap.Alert.aboutAddresses())
+            self.__alert('Note', alert.note, cap.Alert.aboutNote())
+            self.__alert('Incidents', alert.incidents, cap.Alert.aboutIncidents())
             for code in alert.codes:
-                self.__alert('Code', code)
+                self.__alert('Code', code, cap.Alert.aboutCode())
             for reference in alert.references:
-                self.__alert(reference)
+                self.__alert(reference, cap.Alert.aboutReferences())
             
             for info in alert.infos:
-                self.__alert('Language', info.language)
+                self.__alert('Language', info.language, cap.Info.aboutLanguage())
                 for c in info.categories:
-                    self.__alert('Category', c)
+                    self.__alert('Category', c, cap.Info.aboutCategory(), cap.Info.aboutCategory(c))
                 if info.event is not None:
-                    self.__alert('Event', info.event)
+                    self.__alert('Event', info.event, cap.Info.aboutEvent())
                     self.capTitleBuffer.set_text(info.event)
                 for e in info.responseTypes:
-                    self.__alert('Response Type', e)
-                self.__alert('Urgency', info.urgency)
-                self.__alert('Severity', info.severity)
-                self.__alert('Certainty', info.certainty)
-                self.__alert('Audience', info.audience)
-                self.__alerttz('Effective', info.effective)
+                    self.__alert('Response Type', e, cap.Info.aboutResponseType(), cap.Info.aboutResponseType(e))
+                self.__alert('Urgency', info.urgency, cap.Info.aboutUrgency(), cap.Info.aboutUrgency(info.urgency))
+                self.__alert('Severity', info.severity, cap.Info.aboutSeverity(), cap.Info.aboutSeverity(info.severity))
+                self.__alert('Certainty', info.certainty, cap.Info.aboutCertainty(), cap.Info.aboutCertainty(info.certainty))
+                self.__alert('Audience', info.audience, cap.Info.aboutAudience())
+                self.__alerttz('Effective', info.effective, cap.Info.aboutEffective())
                 for code in info.eventCodes:
-                    self.__alert(code, info.eventCodes[code])
-                self.__alerttz('Onset', info.onset)
-                self.__alerttz('Expires', info.expires)
-                self.__alert('Sender Name', info.senderName)
-                self.__alert('Web', info.web)
-                self.__alert('Contact', info.contact)
+                    self.__alert(code, info.eventCodes[code], cap.Info.aboutEventCode())
+                self.__alerttz('Onset', info.onset, cap.Info.aboutOnset())
+                self.__alerttz('Expires', info.expires, cap.Info.aboutExpires())
+                self.__alert('Sender Name', info.senderName, cap.Info.aboutSenderName())
+                self.__alert('Web', info.web, cap.Info.aboutWeb())
+                self.__alert('Contact', info.contact, cap.Info.aboutContact())
                 for p in info.parameters:
-                    self.__alert(p, info.parameters[p])
+                    self.__alert(p, info.parameters[p], cap.Info.aboutParameter())
                 
                 helper = str()
                 if info.headline is not None:
@@ -160,9 +201,12 @@ class Window:
                 
                 for area in info.areas:
                     for polygon in area.polygons:
-                        self.__alert('Map link', utils.mapPolygon(polygon))
+                        m = '<a href="' + utils.mapPolygon(polygon) + '">%s</a>'
+                        self.__alert('Map link', 'Google Maps', markup=m)
+                        self.webview.open(utils.mapPolygon(polygon))
                     for circle in area.circles:
                         self.__alert('Map link', utils.mapCircle(circle))
+                        self.webview.open(utils.mapCircle(circle))
 
         except AttributeError as detail:
             Log.debug('Invalid class passed to populateCap %s' % type(alert))

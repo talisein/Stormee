@@ -152,7 +152,7 @@ class Alert:
         elif type is Alert.STATUS_SYSTEM:
             return u'For messages that support alert network internal functions.'
         elif type is Alert.STATUS_TEST:
-            return u'- Technical testing only, all recipients disregard'
+            return u'Technical testing only, all recipients disregard'
         elif type is Alert.STATUS_DRAFT:
             return u'A preliminary template or draft, not actionable in its current form.'
         else:
@@ -285,7 +285,12 @@ class Alert:
         
     def addInfo(self, info):
         self.infos.append(info)
-        
+    
+    def isExpired(self):
+        for info in self.infos:
+            if not info.isExpired():
+                return False
+        return True
             
 class Info:
     # In addition to the specified subelements, MAY contain one or more <resource> blocks and/or one or more <area> blocks
@@ -367,25 +372,25 @@ class Info:
         elif category == u'Met':
             self.categories.add(Info.CATEGORY_MET)
         elif category == u'Safety':
-            self.category.add(Info.CATEGORY_SAFETY)
+            self.categories.add(Info.CATEGORY_SAFETY)
         elif category == u'Security':
-            self.category.add(Info.CATEGORY_SECURITY)
+            self.categories.add(Info.CATEGORY_SECURITY)
         elif category == u'Rescue':
-            self.category.add(Info.CATEGORY_RESCUE)
+            self.categories.add(Info.CATEGORY_RESCUE)
         elif category == u'Fire':
-            self.category.add(Info.CATEGORY_FIRE)
+            self.categories.add(Info.CATEGORY_FIRE)
         elif category == u'Health':
-            self.category.add(Info.CATEGORY_HEALTH)
+            self.categories.add(Info.CATEGORY_HEALTH)
         elif category == u'Env':
-            self.category.add(Info.CATEGORY_ENV)
+            self.categories.add(Info.CATEGORY_ENV)
         elif category == u'Transport':
-            self.category.add(Info.CATEGORY_TRANSPORT)
+            self.categories.add(Info.CATEGORY_TRANSPORT)
         elif category == u'Infra':
-            self.category.add(Info.CATEGORY_INFRA)
+            self.categories.add(Info.CATEGORY_INFRA)
         elif category == u'CBRNE':
-            self.category.add(Info.CATEGORY_CBRNE)
+            self.categories.add(Info.CATEGORY_CBRNE)
         elif category == u'Other':
-            self.category.add(Info.CATEGORY_OTHER)
+            self.categories.add(Info.CATEGORY_OTHER)
         else:
             Log.error("Unknown category \"%s\"" % category)
 
@@ -597,7 +602,10 @@ class Info:
 
     def setExpires(self, expires):
         self.expires = unicodeToDatetime(expires)
-        
+    
+    def isExpired(self):
+        return datetime.now(zoneinfo.gettz('UTC')) > self.expires.astimezone(zoneinfo.gettz('UTC'))
+
     @staticmethod
     def aboutExpires():
         return u'The expiry time of the information of the alert message.'

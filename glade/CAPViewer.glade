@@ -192,31 +192,28 @@
             <child>
               <object class="GtkHBox" id="middleHbox">
                 <property name="visible">True</property>
+                <property name="homogeneous">True</property>
                 <child>
-                  <object class="GtkVBox" id="vbox2">
+                  <object class="GtkVBox" id="midLeftVbox">
                     <property name="visible">True</property>
                     <property name="orientation">vertical</property>
+                    <property name="homogeneous">True</property>
                     <child>
-                      <object class="GtkScrolledWindow" id="scrolledwindow1">
+                      <object class="GtkScrolledWindow" id="keyValueScrolledWindow">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="hscrollbar_policy">automatic</property>
                         <property name="vscrollbar_policy">automatic</property>
                         <child>
-                          <object class="GtkTreeView" id="alertTreeview">
-                            <property name="visible">True</property>
-                            <property name="can_focus">True</property>
-                            <property name="border_width">2</property>
-                            <property name="model">alertListStore</property>
-                            <property name="headers_visible">False</property>
-                            <property name="headers_clickable">False</property>
-                            <property name="enable_grid_lines">both</property>
-                          </object>
+                          <placeholder/>
                         </child>
                       </object>
                       <packing>
                         <property name="position">0</property>
                       </packing>
+                    </child>
+                    <child>
+                      <placeholder/>
                     </child>
                   </object>
                   <packing>
