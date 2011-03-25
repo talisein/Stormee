@@ -33,6 +33,10 @@ from window import Window
 Log = logging.getLogger()
 
 
+LATLONG_COORDS = (38.56513,-121.75156)
+FIPSCODE = '006113'
+UGCCODE = 'CAZ017'
+
 class CAPTray:
 
     def __init__(self):
@@ -43,7 +47,7 @@ class CAPTray:
         self.rssfeeds.add('http://alerts.weather.gov/cap/ca.php?x=0')
         self.rssfeeds.add('http://edis.oes.ca.gov/index.atom')
         self.rssfeeds.add('http://earthquake.usgs.gov/eqcenter/recenteqsww/catalogs/caprss7days5.xml')
-        self.mycoords = (38.56513,-121.75156)
+        self.mycoords = LATLONG_COORDS
         
         self.statusIcon = gtk.StatusIcon()
         self.statusIcon.set_from_stock(gtk.STOCK_DIALOG_WARNING)
@@ -86,13 +90,13 @@ class CAPTray:
         
         for newEntry in entries:
             self.seen.add(newEntry.caplink)
-            if newEntry.checkFips('006113') or newEntry.checkCoords(self.mycoords):
+            if newEntry.checkFips(FIPSCODE) or newEntry.checkCoords(LATLONG_COORDS):
                 Log.debug("New alert from feed %s: %s" % (newEntry.fromFeed, newEntry.summary))
                 alert = parse.ReadCAP(newEntry.caplink)
                 if alert is None:
                     continue
                 
-                if alert.checkArea('FIPS6','006113') or alert.checkArea('UGC','CAZ017') or alert.checkCoords(self.mycoords):
+                if alert.checkArea('FIPS6',FIPSCODE) or alert.checkArea('UGC',UGCCODE) or alert.checkCoords(LATLONG_COORDS):
                     if not alert.isExpired():
                         self.caps[newEntry.caplink] = alert
                         if not isInitial:
