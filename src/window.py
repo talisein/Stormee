@@ -27,10 +27,7 @@ import utils
 import logging
 import datetime
 import dateutil
-import sys
 import webkit
-import pango
-import glib
 
 
 Log = logging.getLogger()
@@ -43,22 +40,23 @@ class KeyTable(gtk.Table):
         self.set_sensitive(True)
         
         
-    def add(self, key, value, keyTooltip=None, valueTooltip=None, markup=None):
+    def add(self, key, value, keyTooltip=None, valueTooltip=None, url=None):
         keyTag = gtk.Label()
         valueTag = gtk.Label()
         keyTag.set_alignment(1.0, 0.5)
+
+        if url is not None:
+            valueTag = gtk.LinkButton(url)
+            valueTag.set_relief(gtk.RELIEF_NONE)
+            valueTag.set_label(value)
+        else:
+            valueTag.set_selectable(True)
+            valueTag.set_single_line_mode(True)
+            valueTag.set_text(value)
+            
         valueTag.set_alignment(0.0, 0.5)
-        valueTag.set_selectable(True)
-#        valueTag.set_ellipsize(pango.ELLIPSIZE_END)
-        
-        valueTag.set_use_markup(markup is not None)
-        valueTag.set_single_line_mode(True)
         keyTag.set_single_line_mode(True)
         keyTag.set_text(key)
-        valueTag.set_text(value)
-        if markup is not None:
-            valueTag.set_markup(glib.markup_escape_text(markup))
-            valueTag.set_use_markup(True)
         valueTag.set_sensitive(True)
         if keyTooltip is not None:
             keyTag.set_tooltip_text(keyTooltip)
@@ -78,13 +76,13 @@ class KeyTable(gtk.Table):
         self.remove(child)
         
 class Window:
-    def __alert(self, tag, text, keyTooltip=None, valueTooltip=None, markup=None):
+    def __alert(self, tag, text, keyTooltip=None, valueTooltip=None, url=None):
         if text is not None:
-            self.keyTable.add(tag + ':', text, keyTooltip, valueTooltip, markup)
+            self.keyTable.add(tag + ':', text, keyTooltip, valueTooltip, url)
                
-    def __alerttz(self, tag, time, keyTooltip=None, valueTooltip=None, markup=None):
+    def __alerttz(self, tag, time, keyTooltip=None, valueTooltip=None, url=None):
         if time is not None and isinstance(time, datetime.datetime):
-            self.keyTable.add(tag + ':', time.astimezone(dateutil.tz.tzlocal()).strftime("%A (%b %d), %I:%M:%S %p %Z"), keyTooltip, valueTooltip, markup)
+            self.keyTable.add(tag + ':', time.astimezone(dateutil.tz.tzlocal()).strftime("%A (%b %d), %I:%M:%S %p %Z"), keyTooltip, valueTooltip, url)
 
     def __init__(self):
         self.alerts = dict()
@@ -183,7 +181,7 @@ class Window:
                 self.__alerttz('Onset', info.onset, cap.Info.aboutOnset())
                 self.__alerttz('Expires', info.expires, cap.Info.aboutExpires())
                 self.__alert('Sender Name', info.senderName, cap.Info.aboutSenderName())
-                self.__alert('Web', info.web, cap.Info.aboutWeb())
+                self.__alert('Web', info.web, cap.Info.aboutWeb(), url=info.web)
                 self.__alert('Contact', info.contact, cap.Info.aboutContact())
                 for p in info.parameters:
                     self.__alert(p, info.parameters[p], cap.Info.aboutParameter())
@@ -201,16 +199,16 @@ class Window:
                 
                 for area in info.areas:
                     for polygon in area.polygons:
-                        m = '<a href="' + utils.mapPolygon(polygon) + '">%s</a>'
-                        self.__alert('Map link', 'Google Maps', markup=m)
+                        self.__alert('Map link', 'Google Maps...', url=utils.mapPolygon(polygon))
                         self.webview.open(utils.mapPolygon(polygon))
                     for circle in area.circles:
-                        self.__alert('Map link', utils.mapCircle(circle))
+                        self.__alert('Map link', utils.mapCircle(circle), url=utils.mapPolygon(polygon))
                         self.webview.open(utils.mapCircle(circle))
 
         except AttributeError as detail:
-            Log.debug('Invalid class passed to populateCap %s' % type(alert))
-            print detail
+            Log.error('Invalid class passed to populateCap. Type %s' % type(alert))
+            Log.error('As string: ' + str(alert))
+            Log.error('Exception: ' + str(detail))
         except:
             raise
             

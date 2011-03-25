@@ -18,8 +18,6 @@
 #    If not, see <http://www.gnu.org/licenses/>.
 #===============================================================================
 
-import logging
-Log = logging.getLogger()
 import glineenc as polylines
 import math
 
@@ -51,7 +49,6 @@ def mapPolygon(polygon, markerCoords='38.56513,-121.75156'):
     baselink = 'http://maps.google.com/maps/api/staticmap?size=800x600&sensor=false'
     markerlink = '&markers=' + markerCoords
     pathlink = '&path=color:0x0000ff|weight:5|enc:'
-    Log.debug(baselink +markerlink + pathlink + farin)
     return baselink + markerlink + pathlink + farin
 
 
@@ -75,8 +72,6 @@ def mapCircle(circle, markerCoords='38.56513,-121.75156'):
         poly.append((Cx,Cy))
     poly.append(poly[0])
     (farin, farout) = polylines.encode_pairs(poly)
-
-    Log.debug(baselink +markerlink + pathlink + farin)
     return baselink + markerlink + pathlink + farin
 
 def distance(origin, destination):
