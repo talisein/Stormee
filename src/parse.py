@@ -97,9 +97,9 @@ def feedParser(file):
                 if hasattr(entry, 'id'):
                     e.addCapLink(entry.id.text)
                 if hasattr(entry, 'summary'):
-                    e.addSummary(entry.summary.text)
+                    e.addSummary(entry.summary.text.strip())
                 elif hasattr(entry, 'title'):
-                    e.addSummary(entry.title.text)
+                    e.addSummary(entry.title.text.strip())
                 for geocode in entry.findall('{urn:oasis:names:tc:emergency:cap:1.1}geocode'):
                     for child in geocode.getchildren():
                         if child.tag.endswith('valueName'):
@@ -129,11 +129,18 @@ def feedParser(file):
                 e = Entry()
                 e.addCapLink(item.link.text)
                 e.addSummary(item.title.text)
-                lat = item.find('{http://www.w3.org/2003/01/geo/wgs84_pos#}lat').text
-                long = item.find('{http://www.w3.org/2003/01/geo/wgs84_pos#}long').text
+                lat = item.find('{http://www.w3.org/2003/01/geo/wgs84_pos#}lat')
+                long = item.find('{http://www.w3.org/2003/01/geo/wgs84_pos#}long')
+                if lat is not None and long is not None:
+                    lat = lat.text
+                    long = long.text
+                else:
+                    Log.warning("Feed {0} has entry '{1}' with no geographical focus. Skipping the entry.".format(file, item.title.text))
+                    continue
                 e.addCoords((float(lat), float(long)))
-    
                 entries.append(e)
+        else:
+            Log.warning("Unable to find valid root element of feed {0}. Skipping this feed.".format(file))
         return entries
     except AttributeError:
         Log.error("Feed {0} missing expected field.".format(file), exc_info=True)

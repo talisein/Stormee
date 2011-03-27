@@ -43,6 +43,7 @@ class CAPTray:
         self.rssfeeds = set()
         self.seen = set()
 
+#        self.rssfeeds.add('http://www.usgs.gov/hazard_alert/alerts/landslides.rss')
         self.rssfeeds.add('http://alerts.weather.gov/cap/ca.php?x=0')
         self.rssfeeds.add('http://edis.oes.ca.gov/index.atom')
         self.rssfeeds.add('http://earthquake.usgs.gov/eqcenter/recenteqsww/catalogs/caprss7days5.xml')

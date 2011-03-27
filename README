@@ -1,3 +1,11 @@
+Dependancies:
+python
+pygtk
+lxml
+dateutil
+pywebkitgtk
+pynotify
+
 This program monitors feed that provide emergency notifications in the
 "Common Alerting Protocol" or CAP xml-encapsulation. CAP is an OASIS
 standard and should become increasingly prevalent.
