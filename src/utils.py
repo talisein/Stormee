@@ -18,8 +18,9 @@
 #    If not, see <http://www.gnu.org/licenses/>.
 #===============================================================================
 
-import glineenc as polylines
 import math
+import logging
+Log = logging.getLogger()
 
 def point_inside_polygon(x,y,poly):
     '''
@@ -44,35 +45,44 @@ def point_inside_polygon(x,y,poly):
     return inside
 
 
-def mapPolygon(polygon, markerCoords='38.56513,-121.75156'):
-    (farin, farout) = polylines.encode_pairs(polygon)
-    baselink = 'http://maps.google.com/maps/api/staticmap?size=800x600&sensor=false'
-    markerlink = '&markers=' + markerCoords
-    pathlink = '&path=color:0x0000ff|weight:5|enc:'
-    return baselink + markerlink + pathlink + farin
+def mapPolygon(polygon, markerCoords='38.56513, -121.75156'):
+    p1 = open('../poly1.html').read().replace('ORIGIN', markerCoords)
+    for x in range(len(polygon)):
+        if x is not len(polygon) - 1:
+            lat, long = polygon[x]
+            p1 +='new google.maps.LatLng(' + str(lat) + ', ' + str(long) + '),\n'
+        else:
+            p1 +='new google.maps.LatLng(' + str(lat) + ', ' + str(long) + ')\n'
+    p1 += open('../poly2.html').read()
+    
+    return p1
 
 
 def mapCircle(circle, markerCoords='38.56513,-121.75156'):
     x, y, radius = circle
-    
-    baselink = 'http://maps.google.com/maps/api/staticmap?size=800x600&sensor=false'
-    markerlink = '&markers=' + markerCoords + '|' + str(x) + ',' + str(y)
-    pathlink = '&path=color:0x0000ff|weight:5|enc:'
-    lat = y
-    lng = x
-    d2r = 3.14159 / 180
-    r2d = 180/3.14159
-    clat = radius/6371 * r2d
-    clng = clat/math.cos(lat*d2r)
-    poly = list()
-    for z in range(20):
-        theta = 3.14159 * (float(z) / 10)
-        Cx = lng + (clng * math.cos(theta))
-        Cy = lat + (clat * math.sin(theta))
-        poly.append((Cx,Cy))
-    poly.append(poly[0])
-    (farin, farout) = polylines.encode_pairs(poly)
-    return baselink + markerlink + pathlink + farin
+    Log.debug("x: {0}, y: {1}, radius: {2}".format(str(x), str(y), str(radius)))
+    radius = radius * 1000 # meters
+    return open('../circle1.html').read().replace('ORIGIN', markerCoords).replace('RADIUSMETERS', str(radius)).replace('CENTER', str(x) + ', ' + str(y))
+    #===========================================================================
+    # baselink = 'http://maps.google.com/maps/api/staticmap?size=800x600&sensor=false'
+    # markerlink = '&markers=' + markerCoords + '|' + str(x) + ',' + str(y)
+    # pathlink = '&path=color:0x0000ff|weight:5|enc:'
+    # lat = y
+    # lng = x
+    # d2r = 3.14159 / 180
+    # r2d = 180/3.14159
+    # clat = radius/6371 * r2d
+    # clng = clat/math.cos(lat*d2r)
+    # poly = list()
+    # for z in range(20):
+    #    theta = 3.14159 * (float(z) / 10)
+    #    Cx = lng + (clng * math.cos(theta))
+    #    Cy = lat + (clat * math.sin(theta))
+    #    poly.append((Cx,Cy))
+    # poly.append(poly[0])
+    # (farin, farout) = polylines.encode_pairs(poly)
+    # return baselink + markerlink + pathlink + farin
+    #===========================================================================
 
 def distance(origin, destination):
     '''

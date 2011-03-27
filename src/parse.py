@@ -20,18 +20,15 @@
 
 import pygtk
 pygtk.require('2.0')
-import cap
-import logging 
-from lxml import etree
+import urllib2
 from lxml import objectify
+import logging 
 import utils
+import cap
+
 
 MAX_ALERT_DISTANCE = 1000 # km.
 Log = logging.getLogger()
-ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
-Log.addHandler(ch)
-Log.setLevel(logging.DEBUG)
 
 
 class Entry:
@@ -77,63 +74,92 @@ class Entry:
         self.polygon = poly
     
 def feedParser(file):
-    tree = objectify.parse(file)
-    root = tree.getroot()
     entries = list()
+    try:
+        feed = urllib2.urlopen(file)
+    except:
+        Log.error("Unexpected error fetching feed {0}.".format(file), exc_info=True)
+        return entries
     
-    if hasattr(root, 'entry'):
-        for entry in root.entry:
-            e = Entry()
-            e.fromFeed = str(file)
-            if hasattr(entry, 'id'):
-                e.addCapLink(entry.id.text)
-            if hasattr(entry, 'summary'):
-                e.addSummary(entry.summary.text)
-            elif hasattr(entry, 'title'):
-                e.addSummary(entry.title.text.strip())
-            for geocode in entry.findall('{urn:oasis:names:tc:emergency:cap:1.1}geocode'):
-                for child in geocode.getchildren():
-                    if child.tag.endswith('valueName'):
-                        if child.text == 'FIPS6':
-                            e.addFips(child.getnext().text)
-                        else:
-                            Log.warning("Unparsed geoCode of type %s" % child.text)
-            for latLonBox in entry.findall('{http://www.alerting.net/namespace/index_1.0}latLonBox'):
-                c1, c2 = latLonBox.text.split(' ')
-                c1x, c1y = c1.split(',')
-                c2x, c2y = c2.split(',')
-                c1x = float(c1x)
-                c1y = float(c1y)
-                c2x = float(c2x)
-                c2y = float(c2y)
-                poly = list()
-                poly.append((c1x, c1y))
-                poly.append((c1x, c2y))
-                poly.append((c2x, c2y))
-                poly.append((c2x, c1y))
-                poly.append((c1x, c1y))
-                e.addPoly(poly)
-            entries.append(e)
-    elif hasattr(root, 'channel'):
-        # USGS Earthquake feed
-        for item in root.channel.item:
-            e = Entry()
-            e.addCapLink(item.link.text)
-            e.addSummary(item.title.text)
-            lat = item.find('{http://www.w3.org/2003/01/geo/wgs84_pos#}lat').text
-            long = item.find('{http://www.w3.org/2003/01/geo/wgs84_pos#}long').text
-            e.addCoords((float(lat), float(long)))
+    try:
+        tree = objectify.parse(feed)
+    except:
+        Log.error("Unexpected error parsing feed {0}.".format(file), exc_info=True)
+        return entries
 
-            entries.append(e)
-    return entries
-
+    
+    try:
+        root = tree.getroot()
+        if hasattr(root, 'entry'):
+            for entry in root.entry:
+                e = Entry()
+                e.fromFeed = str(file)
+                if hasattr(entry, 'id'):
+                    e.addCapLink(entry.id.text)
+                if hasattr(entry, 'summary'):
+                    e.addSummary(entry.summary.text)
+                elif hasattr(entry, 'title'):
+                    e.addSummary(entry.title.text)
+                for geocode in entry.findall('{urn:oasis:names:tc:emergency:cap:1.1}geocode'):
+                    for child in geocode.getchildren():
+                        if child.tag.endswith('valueName'):
+                            if child.text == 'FIPS6':
+                                e.addFips(child.getnext().text)
+                            else:
+                                Log.warning("Unparsed geoCode of type %s" % child.text)
+                for latLonBox in entry.findall('{http://www.alerting.net/namespace/index_1.0}latLonBox'):
+                    c1, c2 = latLonBox.text.split(' ')
+                    c1x, c1y = c1.split(',')
+                    c2x, c2y = c2.split(',')
+                    c1x = float(c1x)
+                    c1y = float(c1y)
+                    c2x = float(c2x)
+                    c2y = float(c2y)
+                    poly = list()
+                    poly.append((c1x, c1y))
+                    poly.append((c1x, c2y))
+                    poly.append((c2x, c2y))
+                    poly.append((c2x, c1y))
+                    poly.append((c1x, c1y))
+                    e.addPoly(poly)
+                entries.append(e)
+        elif hasattr(root, 'channel'):
+            # USGS Earthquake feed
+            for item in root.channel.item:
+                e = Entry()
+                e.addCapLink(item.link.text)
+                e.addSummary(item.title.text)
+                lat = item.find('{http://www.w3.org/2003/01/geo/wgs84_pos#}lat').text
+                long = item.find('{http://www.w3.org/2003/01/geo/wgs84_pos#}long').text
+                e.addCoords((float(lat), float(long)))
+    
+                entries.append(e)
+        return entries
+    except AttributeError:
+        Log.error("Feed {0} missing expected field.".format(file), exc_info=True)
+        return entries
+    except:
+        Log.error("Unexpected error parsing feed {0}".format(file), exc_info=True)
+        return entries
+    
 def ReadCAP(file):
     alert = cap.Alert()
     
-    parser = objectify.makeparser()
+
     try:
-        tree = objectify.parse(file, parser)
-        
+        feed = urllib2.urlopen(file)
+    except:
+        Log.error("Unexpected error fetching CAP {0}".format(file), exc_info=True)
+        feed = file
+
+    try:
+        parser = objectify.makeparser()
+        tree = objectify.parse(feed, parser)
+    except:
+        Log.error("Unexpected error parsing CAP {0}".format(file), exc_info=True)
+        return None
+    
+    try:
         root = tree.getroot()
         assert root.tag.endswith('alert')
         alert.setId(root.identifier.text)
@@ -237,8 +263,6 @@ def ReadCAP(file):
                     if hasattr(area, 'polygon'):
                         for polygon in area.polygon:
                             a.addPolygon(polygon.text)
-                    else:
-                        Log.debug("No polygon")
                     if hasattr(area, 'circle'):
                         for circle in area.circle:
                             a.addCircle(circle.text)
@@ -252,5 +276,9 @@ def ReadCAP(file):
                     i.addArea(a)
             alert.addInfo(i)
         return alert
-    except etree.XMLSyntaxError:
-        Log.error("Broken link %s" % file) 
+    except AttributeError:
+        Log.error("CAP {0} missing required field.".format(file), exc_info=True)
+        return None
+    except:
+        Log.error("Unexpected error parsing CAP {0}".format(file), exc_info=True)
+        return None

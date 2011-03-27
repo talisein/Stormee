@@ -20,6 +20,15 @@
 
 import gtk
 import tray
+import logging
+
+Log = logging.getLogger()
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+ch.setFormatter(logging.Formatter('%(asctime)s %(levelname)-8s %(message)s'))
+Log.addHandler(ch)
+Log.setLevel(logging.DEBUG)
+
 
 if __name__ == '__main__':
     t = tray.CAPTray()

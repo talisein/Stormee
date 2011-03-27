@@ -24,7 +24,6 @@ import pygtk
 pygtk.require("2.0")
 
 import pynotify
-import datetime
 import logging
 import parse
 import cap
@@ -83,7 +82,7 @@ class CAPTray:
         return False
     
     def rssTimer_cb(self, isInitial=False):
-        Log.debug("Hitting up RSS Feeds at %s" % datetime.datetime.now())
+        Log.info("Hitting up RSS Feeds.")
         entries = list()
         for rssfeed in self.rssfeeds:
             entries.extend(filter(lambda entry: entry.caplink not in self.seen, parse.feedParser(rssfeed)))
@@ -91,7 +90,7 @@ class CAPTray:
         for newEntry in entries:
             self.seen.add(newEntry.caplink)
             if newEntry.checkFips(FIPSCODE) or newEntry.checkCoords(LATLONG_COORDS):
-                Log.debug("New alert from feed %s: %s" % (newEntry.fromFeed, newEntry.summary))
+                Log.info("New alert from feed {0}: {1}".format(newEntry.fromFeed, newEntry.summary))
                 alert = parse.ReadCAP(newEntry.caplink)
                 if alert is None:
                     continue
@@ -107,7 +106,7 @@ class CAPTray:
                                 alert.infos[0].description = "NO DESCRIPTION"
                             if alert.infos[0].event is None:
                                 alert.infos[0].event = "UNTITLED EVENT"
-                            n = pynotify.Notification(alert.infos[0].event, "<a href='%s'>Link</a>\n%s" % (newEntry.caplink, alert.infos[0].description[0:120]))
+                            n = pynotify.Notification(alert.infos[0].event, "<a href='{0}'>Link</a>\n{1}".format(newEntry.caplink, alert.infos[0].description[0:120]))
                             n.set_urgency(pynotify.URGENCY_NORMAL)
                             n.set_category("device")
                         
@@ -124,14 +123,23 @@ class CAPTray:
                             n.set_icon_from_pixbuf(icon)
                             
                             n.show()
-        Log.debug("Done checking RSS feeds at %s" % datetime.datetime.now())
+                    else:
+                        Log.info("... but it is already expired.")
+        Log.info("Done checking RSS feeds.")
         self.ejectExpired()
+#        self.caps['Testing 1'] = parse.ReadCAP('../alert.cap')
+#        self.caps['Testing 2'] = parse.ReadCAP('../alert2.cap')
+#        self.caps['Testing 3'] = parse.ReadCAP('../alert3.cap')        
         return True
     
     def ejectExpired(self):
+        keys = list()
         for cap in self.caps:
             if self.caps[cap].isExpired():
-                self.caps.pop(cap)
+                Log.info("CAP {0} has expired.".format(cap))
+                keys.append(cap)
+        for key in keys:
+            del self.caps[key]
 
     def popup_menu_cb(self, widget, button, time, data=None):
         if button == 3:

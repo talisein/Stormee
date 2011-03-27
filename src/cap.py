@@ -23,7 +23,6 @@ from datetime import timedelta
 from dateutil import parser as dateparser
 import logging 
 import base64
-import glineenc as polylines
 import utils
 from dateutil import zoneinfo
 
@@ -94,7 +93,8 @@ class Alert:
         return False
         
     def setId(self, id):
-        self.id = id
+        if id is not None:
+            self.id = id.strip()
     
     @staticmethod
     def aboutId():
@@ -107,7 +107,8 @@ class Alert:
             Log.warn("Unexpected namespace %s" % namespace)
 
     def setSender(self, sender):
-        self.sender = sender
+        if sender is not None:
+            self.sender = sender.strip()
         
     @staticmethod
     def aboutSender():
@@ -127,19 +128,21 @@ class Alert:
         return u'The time and date of the origination of the alert message.'
     
     def setStatus(self, status):
-        if status == u'Actual':
-            self.status = Alert.STATUS_ACTUAL
-        elif status == u'Exercise':
-            self.status = Alert.STATUS_EXERCISE
-        elif status == u'System':
-            self.status = Alert.STATUS_SYSTEM
-        elif status == u'Test':
-            self.status = Alert.STATUS_TEST
-        elif status == u'Draft':
-            self.status = Alert.STATUS_DRAFT
-        else:
-            Log.error("Unknown CAP status \"%s\"" % status)
-            self.hasError = True
+        if status is not None:
+            status = status.strip()
+            if status == u'Actual':
+                self.status = Alert.STATUS_ACTUAL
+            elif status == u'Exercise':
+                self.status = Alert.STATUS_EXERCISE
+            elif status == u'System':
+                self.status = Alert.STATUS_SYSTEM
+            elif status == u'Test':
+                self.status = Alert.STATUS_TEST
+            elif status == u'Draft':
+                self.status = Alert.STATUS_DRAFT
+            else:
+                Log.error("Unknown CAP status \"%s\"" % status)
+                self.hasError = True
             
     @staticmethod
     def aboutStatus(type=None):
@@ -159,19 +162,21 @@ class Alert:
             return u'Invalid type'
         
     def setMsgType(self, msgType):
-        if msgType == u'Alert':
-            self.msgType = Alert.MSGTYPE_ALERT
-        elif msgType == u'Update':
-            self.msgType = Alert.MSGTYPE_UPDATE
-        elif msgType == u'Cancel':
-            self.msgType = Alert.MSGTYPE_CANCEL
-        elif msgType == u'Ack':
-            self.msgType = Alert.MSGTYPE_ACK
-        elif msgType == u'Error':
-            self.msgType = Alert.MSGTYPE_ERROR
-        else:
-            Log.error("Unknown CAP message type \"%s\"" % msgType)
-            self.hasError = True
+        if msgType is not None:
+            msgType = msgType.strip()
+            if msgType == u'Alert':
+                self.msgType = Alert.MSGTYPE_ALERT
+            elif msgType == u'Update':
+                self.msgType = Alert.MSGTYPE_UPDATE
+            elif msgType == u'Cancel':
+                self.msgType = Alert.MSGTYPE_CANCEL
+            elif msgType == u'Ack':
+                self.msgType = Alert.MSGTYPE_ACK
+            elif msgType == u'Error':
+                self.msgType = Alert.MSGTYPE_ERROR
+            else:
+                Log.error("Unknown CAP message type \"%s\"" % msgType)
+                self.hasError = True
         
     @staticmethod
     def aboutMsgType(type=None):
@@ -191,22 +196,25 @@ class Alert:
             return u'Invalid type'
         
     def setSource(self, source):
-        self.source = source
+        if source is not None:
+            self.source = source.strip()
         
     @staticmethod
     def aboutSource():
         return u'The particular source of this alert; e.g., an operator or a specific device.'
     
     def setScope(self, scope):
-        if scope == u'Public':
-            self.scope = Alert.SCOPE_PUBLIC
-        elif scope == u'Restricted':
-            self.scope = Alert.SCOPE_RESTRICTED
-        elif scope == u'Private':
-            self.scope = Alert.SCOPE_PRIVATE
-        else:
-            Log.error("Unknown CAP scope \"%s\" % scope")
-            self.hasError = True
+        if scope is not None:
+            scope = scope.strip()
+            if scope == u'Public':
+                self.scope = Alert.SCOPE_PUBLIC
+            elif scope == u'Restricted':
+                self.scope = Alert.SCOPE_RESTRICTED
+            elif scope == u'Private':
+                self.scope = Alert.SCOPE_PRIVATE
+            else:
+                Log.error("Unknown CAP scope \"%s\" % scope")
+                self.hasError = True
             
     @staticmethod
     def aboutScope(scope=None):
@@ -222,27 +230,31 @@ class Alert:
             return u'Invalid scope.'
         
     def setRestriction(self, restriction):
-        self.restriction = restriction
-    
+        if restriction is not None:
+            self.restriction = restriction.strip()
+
     @staticmethod
     def aboutRestriction():
         return u'The text describing the rule for limiting distribution of the restricted alert message.'
         
     def setAddresses(self, addresses):
         # Multiple space-delimited addresses MAY be included.  Addresses including whitespace MUST be enclosed in double-quotes.
-        if unicode.count(addresses, u'"') > 0:
-            Log.warning("CAP contains addresses with quotes. Parsing is unimplemented.")
-        else:
-            self.addresses = addresses.split(' ');
-        self.addresses = addresses
+        if addresses is not None:
+            addresses = addresses.strip()
+            if unicode.count(addresses, u'"') > 0:
+                Log.warning("CAP contains addresses with quotes. Parsing is unimplemented.")
+            else:
+                self.addresses = addresses.split(' ');
+            self.addresses = addresses
         
     @staticmethod
     def aboutAddresses():
         return u'The group listing of intended recipients of the private alert message.'
         
     def addCode(self, code):
-        #  Multiple instances MAY occur within a single <info> block
-        self.codes.append(code)
+        if code is not None:
+            #  Multiple instances MAY occur within a single <info> block
+            self.codes.append(code.strip())
         
     @staticmethod
     def aboutCode():
@@ -250,8 +262,9 @@ class Alert:
         
     def setNote(self, note):
         # The message note is primarily intended for use with  <status> “Exercise” and <msgType> “Error
-        self.note = note
-        
+        if note is not None:
+            self.note = note.strip()
+
     @staticmethod
     def aboutNote():
         return u'The text describing the purpose or significance of the alert message.'
@@ -262,13 +275,13 @@ class Alert:
         if references is None:
             return
         else:
-            for reference in references.split(' '):
+            for reference in references.strip().split(' '):
                 if reference.count(',') is 2:
                     (sender,identifier,sent) = reference.split(references,',')
                     self.references.append(identifier)
                 else:
                     if len(reference) > 0:
-                        Log.warning("Failure to parse references. \"%s\"" % references.strip())
+                        Log.warning("Failure to parse references. \"{0}\"".format(references))
                     
     @staticmethod
     def aboutReferences():
@@ -277,15 +290,17 @@ class Alert:
     def setIncidents(self, incidents):
         # Used to collate multiple messages referring to different aspects of the same incident
         #  If multiple incident identifiers are referenced, they SHALL be separated by whitespace.  Incident names including whitespace SHALL be surrounded by double-quote
-        self.incidents = incidents
+        if incidents is not None:
+            self.incidents = incidents.strip()
         
     @staticmethod 
     def aboutIncidents():
         return u'The group listing naming the referent incident(s) of the alert message.'
         
     def addInfo(self, info):
-        self.infos.append(info)
-    
+        if info is not None:
+            self.infos.append(info)
+
     def isExpired(self):
         for info in self.infos:
             if not info.isExpired():
@@ -358,7 +373,7 @@ class Info:
         self.contact = None
     def setLanguage(self, language):
         if len(language) > 0:
-            self.language = language
+            self.language = language.strip()
         else:
             self.language = u'en-US'
             
@@ -367,32 +382,34 @@ class Info:
         return u'The code denoting the language of the info subelement of the alert message'
 
     def addCategory(self, category):
-        if category == u'Geo':
-            self.categories.add(Info.CATEGORY_GEO)
-        elif category == u'Met':
-            self.categories.add(Info.CATEGORY_MET)
-        elif category == u'Safety':
-            self.categories.add(Info.CATEGORY_SAFETY)
-        elif category == u'Security':
-            self.categories.add(Info.CATEGORY_SECURITY)
-        elif category == u'Rescue':
-            self.categories.add(Info.CATEGORY_RESCUE)
-        elif category == u'Fire':
-            self.categories.add(Info.CATEGORY_FIRE)
-        elif category == u'Health':
-            self.categories.add(Info.CATEGORY_HEALTH)
-        elif category == u'Env':
-            self.categories.add(Info.CATEGORY_ENV)
-        elif category == u'Transport':
-            self.categories.add(Info.CATEGORY_TRANSPORT)
-        elif category == u'Infra':
-            self.categories.add(Info.CATEGORY_INFRA)
-        elif category == u'CBRNE':
-            self.categories.add(Info.CATEGORY_CBRNE)
-        elif category == u'Other':
-            self.categories.add(Info.CATEGORY_OTHER)
-        else:
-            Log.error("Unknown category \"%s\"" % category)
+        if category is not None:
+            category = category.strip()
+            if category == u'Geo':
+                self.categories.add(Info.CATEGORY_GEO)
+            elif category == u'Met':
+                self.categories.add(Info.CATEGORY_MET)
+            elif category == u'Safety':
+                self.categories.add(Info.CATEGORY_SAFETY)
+            elif category == u'Security':
+                self.categories.add(Info.CATEGORY_SECURITY)
+            elif category == u'Rescue':
+                self.categories.add(Info.CATEGORY_RESCUE)
+            elif category == u'Fire':
+                self.categories.add(Info.CATEGORY_FIRE)
+            elif category == u'Health':
+                self.categories.add(Info.CATEGORY_HEALTH)
+            elif category == u'Env':
+                self.categories.add(Info.CATEGORY_ENV)
+            elif category == u'Transport':
+                self.categories.add(Info.CATEGORY_TRANSPORT)
+            elif category == u'Infra':
+                self.categories.add(Info.CATEGORY_INFRA)
+            elif category == u'CBRNE':
+                self.categories.add(Info.CATEGORY_CBRNE)
+            elif category == u'Other':
+                self.categories.add(Info.CATEGORY_OTHER)
+            else:
+                Log.error("Unknown category \"%s\"" % category)
 
     @staticmethod
     def aboutCategory(category=None):
@@ -426,32 +443,35 @@ class Info:
             return u'Invalid category \"%s\"'% category
 
     def setEvent(self, event):
-        self.event = event
-        
+        if event is not None:
+            self.event = event.strip()
+
     @staticmethod
     def aboutEvent():
         return u'The text denoting the type of the subject event of the alert message.'
 
 
     def addResponseType(self, responseType):
-        if responseType == u'Shelter':
-            self.responseTypes.add(Info.RESPONSE_SHELTER)
-        elif responseType == u'Evacuate':
-            self.responseTypes.add(Info.RESPONSE_EVACUATE)
-        elif responseType == u'Prepare':
-            self.responseTypes.add(Info.RESPONSE_PREPARE)
-        elif responseType == u'Execute':
-            self.responseTypes.add(Info.RESPONSE_EXECUTE)
-        elif responseType == u'Monitor':
-            self.responseTypes.add(Info.RESPONSE_MONITOR)
-        elif responseType == u'Assess':
-            self.responseTypes.add(Info.RESPONSE_ASSESS)
-        elif responseType == u'None':
-            self.responseTypes.add(Info.RESPONSE_NONE)
-        elif responseType == u'AlLClear':
-            self.responseTypes.add(Info.RESPONSE_ALLCLEAR)
-        else:
-            Log.error("Invalid reponseType \"%s\"" % responseType)
+        if responseType is not None:
+            responseType = responseType.strip()
+            if responseType == u'Shelter':
+                self.responseTypes.add(Info.RESPONSE_SHELTER)
+            elif responseType == u'Evacuate':
+                self.responseTypes.add(Info.RESPONSE_EVACUATE)
+            elif responseType == u'Prepare':
+                self.responseTypes.add(Info.RESPONSE_PREPARE)
+            elif responseType == u'Execute':
+                self.responseTypes.add(Info.RESPONSE_EXECUTE)
+            elif responseType == u'Monitor':
+                self.responseTypes.add(Info.RESPONSE_MONITOR)
+            elif responseType == u'Assess':
+                self.responseTypes.add(Info.RESPONSE_ASSESS)
+            elif responseType == u'None':
+                self.responseTypes.add(Info.RESPONSE_NONE)
+            elif responseType == u'AlLClear':
+                self.responseTypes.add(Info.RESPONSE_ALLCLEAR)
+            else:
+                Log.error("Invalid reponseType \"%s\"" % responseType)
     
     @staticmethod
     def aboutResponseType(responseType=None):
@@ -477,18 +497,20 @@ class Info:
             return u"Invalid responseType %s" % responseType
         
     def setUrgency(self, urgency):
-        if urgency == u'Immediate':
-            self.urgency = Info.URGENCY_IMMEDIATE
-        elif urgency == u'Expected':
-            self.urgency = Info.URGENCY_EXPECTED
-        elif urgency == u'Future':
-            self.urgency = Info.URGENCY_FUTURE
-        elif urgency == u'Past':
-            self.urgency = Info.URGENCY_PAST
-        elif urgency == u'Unknown':
-            self.urgency = Info.URGENCY_UNKNOWN
-        else:
-            Log.error("Invalid urgency \"%s\"" % urgency)
+        if urgency is not None:
+            urgency = urgency.strip()
+            if urgency == u'Immediate':
+                self.urgency = Info.URGENCY_IMMEDIATE
+            elif urgency == u'Expected':
+                self.urgency = Info.URGENCY_EXPECTED
+            elif urgency == u'Future':
+                self.urgency = Info.URGENCY_FUTURE
+            elif urgency == u'Past':
+                self.urgency = Info.URGENCY_PAST
+            elif urgency == u'Unknown':
+                self.urgency = Info.URGENCY_UNKNOWN
+            else:
+                Log.error("Invalid urgency \"%s\"" % urgency)
             
     @staticmethod
     def aboutUrgency(urgency=None):
@@ -508,18 +530,20 @@ class Info:
             return "Unknown urgency \"%s|"" % urgency"
         
     def setSeverity(self, severity):
-        if severity == u'Extreme':
-            self.severity = Info.SEVERITY_EXTREME
-        elif severity == u'Severe':
-            self.severity = Info.SEVERITY_SEVERE
-        elif severity == u'Moderate':
-            self.severity = Info.SEVERITY_MODERATE
-        elif severity == u'Minor':
-            self.severity = Info.SEVERITY_MINOR
-        elif severity == u'Unknown':
-            self.severity = Info.SEVERITY_UNKNOWN
-        else:
-            Log.error("Invalid severity \"%s\"" % severity)
+        if severity is not None:
+            severity = severity.strip()
+            if severity == u'Extreme':
+                self.severity = Info.SEVERITY_EXTREME
+            elif severity == u'Severe':
+                self.severity = Info.SEVERITY_SEVERE
+            elif severity == u'Moderate':
+                self.severity = Info.SEVERITY_MODERATE
+            elif severity == u'Minor':
+                self.severity = Info.SEVERITY_MINOR
+            elif severity == u'Unknown':
+                self.severity = Info.SEVERITY_UNKNOWN
+            else:
+                Log.error("Invalid severity \"%s\"" % severity)
             
     @staticmethod
     def aboutSeverity(severity=None):
@@ -539,20 +563,22 @@ class Info:
             return "Unknown severity \"%s\"" % severity
 
     def setCertainty(self, certainty):
-        if certainty == u'Observed':
-            self.certainty = Info.CERTAINTY_OBSERVED
-        elif certainty == u'Likely':
-            self.certainty = Info.CERTAINTY_LIKELY
-        elif certainty == u'Possible':
-            self.certainty = Info.CERTAINTY_POSSIBLE
-        elif certainty == u'Unlikely':
-            self.certainty = Info.CERTAINTY_UNLIKELY
-        elif certainty == u'Unknown':
-            self.certainty = Info.CERTAINTY_UNKNOWN
-        elif certainty == u'Very Likely' or certainty == u'VeryLikely':
-            self.certainty = Info.CERTAINTY_LIKELY
-        else:
-            Log.error("Invalid certainty \"%s\"" % certainty)
+        if certainty is not None:
+            certainty = certainty.strip()
+            if certainty == u'Observed':
+                self.certainty = Info.CERTAINTY_OBSERVED
+            elif certainty == u'Likely':
+                self.certainty = Info.CERTAINTY_LIKELY
+            elif certainty == u'Possible':
+                self.certainty = Info.CERTAINTY_POSSIBLE
+            elif certainty == u'Unlikely':
+                self.certainty = Info.CERTAINTY_UNLIKELY
+            elif certainty == u'Unknown':
+                self.certainty = Info.CERTAINTY_UNKNOWN
+            elif certainty == u'Very Likely' or certainty == u'VeryLikely':
+                self.certainty = Info.CERTAINTY_LIKELY
+            else:
+                Log.error("Invalid certainty \"%s\"" % certainty)
             
     @staticmethod
     def aboutCertainty(certainty=None):
@@ -573,14 +599,16 @@ class Info:
 
 
     def setAudience(self,audience):
-        self.audience = audience
+        if audience is not None:
+            self.audience = audience.strip()
         
     @staticmethod
     def aboutAudience():
         return u'The text describing the intended audience of the alert message.'
 
     def addEventCode(self, key, value):
-        self.eventCodes[key] = value
+        if key is not None and value is not None:
+            self.eventCodes[key.strip()] = value.strip()
 
     @staticmethod
     def aboutEventCode():
@@ -614,73 +642,86 @@ class Info:
         self.expires = self.effective + DEFAULT_EXPIRES
 
     def setSenderName(self, senderName):
-        self.senderName = senderName
-        
+        if senderName is not None:
+            self.senderName = senderName.strip()
+
     @staticmethod
     def aboutSenderName():
         return u'The human-readable name of the agency or authority issuing this alert.'
 
     def setHeadline(self, headline):
-        self.headline = headline
-        
+        if headline is not None:
+            self.headline = headline.strip()
+
     @staticmethod
     def aboutHeadline():
         return u'A brief human-readable headline.'
 
     def setDescription(self, description):
-        self.description = description
-#        for x in desciption.splitlines():
-#            self.description = self.description + x
+        if description is not None and len(description) > 0:
+            self.description = description.strip()
+        else:
+            self.description = "NO DESCRIPTION"
 
     @staticmethod
     def aboutDescription():
         return u'An extended human readable description of the hazard or event that occasioned this message.'
     
     def setInstruction(self, instruction):
-        self.instruction = instruction
-        
+        if instruction is not None and len(instruction) > 0:
+            self.instruction = instruction.strip()
+        else:
+            self.instruction = "NO INSTRUCTIONS"
+            
     @staticmethod
     def aboutInstruction():
         return u'An extended human readable instruction to targeted recipients.'
     
     def setWeb(self, web):
-        self.web = web
-        
+        if web is not None:
+            self.web = web.strip()
+            
     @staticmethod
     def aboutWeb():
         return u'A full, absolute URI for an HTML page or other text resource with additional or reference information regarding this alert.'
     
     def setContact(self, contact):
-        self.contact = contact
+        if contact is not None:
+            self.contact = contact.strip()
     
     @staticmethod
     def aboutContact():
         return u'The text describing the contact for follow-up and confirmation of the alert message'
     
     def addParameter(self, key, value):
-        self.parameters[key] = value
+        if key is not None and value is not None:
+            self.parameters[key.strip()] = value.strip()
 
     @staticmethod
     def aboutParameter():
         return u'A system specific additional parameter associated with the alert message'
 
     def addResource(self, resource):
-        self.resources.append(resource)
-        
+        if resource is not None:
+            self.resources.append(resource.strip())
+
     def addArea(self, area):
         self.areas.append(area)
         
 class Resource:
     def setResourceDesc(self, resourceDesc):
-        self.resourceDesc = resourceDesc
-        
+        if resourceDesc is not None:
+            self.resourceDesc = resourceDesc.strip()
+            Log.info("A resource is attached to this CAP.")
+
     @staticmethod
     def aboutResourceDesc():
         return u'The human-readable text describing the type and content, such as “map” or “photo”, of the resource file.'
     
     def setMimeType(self, mimeType):
-        self.mimeType = mimeType
-        
+        if mimeType is not None:
+            self.mimeType = mimeType.strip()
+
     @staticmethod
     def aboutMimeType():
         return u'The identifier of the MIME content type and sub-type describing the resource file'
@@ -693,8 +734,9 @@ class Resource:
         return u'Approximate size of the resource file in bytes.'
     
     def setUri(self, uri):
-        self.uri = uri
-        
+        if uri is not None:
+            self.uri = uri.strip()
+
     @staticmethod
     def aboutUri():
         return u'A full absolute URI, typically a Uniform Resource Locator that can be used to retrieve the resource over the Internet OR a relative URI to name the content of a <derefUri> element if one is present in this resource block'
@@ -721,7 +763,7 @@ class Area:
         
     def setAreaDesc(self, areaDesc):
         self.areaDesc = areaDesc
-        
+
     @staticmethod
     def aboutAreaDesc():
         return u'A text description of the affected area.'

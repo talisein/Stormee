@@ -39,7 +39,6 @@ class KeyTable(gtk.Table):
         self.columns = columns
         self.set_sensitive(True)
         
-        
     def add(self, key, value, keyTooltip=None, valueTooltip=None, url=None):
         keyTag = gtk.Label()
         valueTag = gtk.Label()
@@ -64,7 +63,7 @@ class KeyTable(gtk.Table):
             valueTag.set_tooltip_text(valueTooltip)
         self.rows += 1
         self.resize(self.rows, self.columns)
-        self.attach(keyTag, 0, 1, self.rows - 1, self.rows, xoptions=gtk.FILL, xpadding=5)
+        self.attach(keyTag, 0, 1, self.rows - 1, self.rows, xoptions=gtk.FILL, yoptions=gtk.FILL, xpadding=3)
         self.attach(valueTag, 1, 2, self.rows -1, self.rows, xpadding=5)
         self.show_all()
 
@@ -96,25 +95,23 @@ class Window:
         self.capTitleBuffer = builder.get_object("capTitleBuffer")
 
         self.keyValueWindow = builder.get_object("keyValueScrolledWindow")
+        self.viewport = gtk.Viewport()
         self.keyTable = KeyTable() 
         self.keyValueWindow.add_with_viewport(self.keyTable)
        
-        self.infoTextBuffer = builder.get_object("infoTextBuffer")
-        
-        self.midLeftVbox = builder.get_object("midLeftVbox")
-        self.webview = webkit.WebView()
-        
-        self.midLeftVbox.pack_start(self.webview, False, True, 1)
-        self.webview.show()
-                
+        self.notebook = builder.get_object("notebook")
+        self.notebook.show()
         self.window.show()
         
+    def changepage_cb(self, notebook, page, page_num, data=None):
+        Log.debug("Changed page bro")
+        p = self.notebook.get_nth_page(page_num)
+        return True
         
-        
-            
     def on_mainWindow_destroy(self, widget, data=None):
         pass
-    
+
+
     def acceptCap(self, alert):
         if isinstance(alert, cap.Alert):
             self.alerts[alert.id] = alert
@@ -145,6 +142,8 @@ class Window:
         try:
             self.capTitleBuffer.set_text(alert.id)
             self.keyTable.clear()
+            while self.notebook.get_n_pages() > 0:
+                self.notebook.remove_page(-1)
             self.__alert('Message ID', alert.id, cap.Alert.aboutId())
             self.__alert('Version', alert.version)
             self.__alert('Sender', alert.sender,cap.Alert.aboutSender())
@@ -163,6 +162,14 @@ class Window:
                 self.__alert(reference, cap.Alert.aboutReferences())
             
             for info in alert.infos:
+                tb = gtk.TextBuffer()
+                tv = gtk.TextView(tb)
+                label = gtk.Label('Info')
+                pn = self.notebook.append_page(tv, label)
+                self.notebook.set_current_page(pn)
+                self.notebook.show()
+                tv.show()
+                Log.debug("Added page {0}".format(pn))
                 self.__alert('Language', info.language, cap.Info.aboutLanguage())
                 for c in info.categories:
                     self.__alert('Category', c, cap.Info.aboutCategory(), cap.Info.aboutCategory(c))
@@ -195,20 +202,30 @@ class Window:
                 helper += 'Instructions:\n\n'
                 if info.instruction is not None:
                     helper += info.instruction
-                self.infoTextBuffer.set_text(helper)
+                tb.set_text(helper)
+                file = open('../marker-simple.html')
                 
+#                self.webview.load_html_string(file.read(),'http://localhost/testing')
                 for area in info.areas:
                     for polygon in area.polygons:
-                        self.__alert('Map link', 'Google Maps...', url=utils.mapPolygon(polygon))
-                        self.webview.open(utils.mapPolygon(polygon))
+                        webview = webkit.WebView()
+                        label = gtk.Label('Map')
+                        pn = self.notebook.append_page(webview, label)
+                        webview.show()
+                        Log.debug("Added page {0} for poly map.".format(pn))
+                        #self.__alert('Map link', 'Google Maps...', url=utils.mapPolygon(polygon))
+                        webview.load_html_string(utils.mapPolygon(polygon),'http://localhost/testing')
+                        #self.webview.open(utils.mapPolygon(polygon))
                     for circle in area.circles:
-                        self.__alert('Map link', utils.mapCircle(circle), url=utils.mapPolygon(polygon))
-                        self.webview.open(utils.mapCircle(circle))
-
-        except AttributeError as detail:
-            Log.error('Invalid class passed to populateCap. Type %s' % type(alert))
-            Log.error('As string: ' + str(alert))
-            Log.error('Exception: ' + str(detail))
+                        webview = webkit.WebView()
+                        label = gtk.Label('Map')
+                        pn = self.notebook.append_page(webview, label)
+                        webview.show()
+                        #self.__alert('Map link', utils.mapCircle(circle), url=utils.mapPolygon(polygon))
+                        Log.debug("Added page {0} for circle map.".format(pn))
+                        webview.load_html_string(utils.mapCircle(circle),'http://localhost/testing')
+                        
+        except AttributeError:
+            Log.error("Attribute error while populating window from CAP {0}.".format(alert.id), exc_info=True)
         except:
-            raise
-            
+            Log.error("Unexpected error while populating window from CAP {0}".format(alert.id), exc_info=True)            
