@@ -1126,4 +1126,7 @@ class VTEC:
                 return VTEC.flood_record_status[frs.upper()]
             else:
                 Log.warning("Unknown Flood Record Status {0}".format(frs))
-        return "Unknown record status"
+        return 'Unknown record status'
+    
+# TODO: UGC codes
+# http://www.weather.gov/directives/sym/pd01017002curr.pdf
