@@ -694,9 +694,17 @@ class Info:
         return u'The text describing the contact for follow-up and confirmation of the alert message'
     
     def addParameter(self, key, value):
+        # TODO:
+        # Messages intended for EAS and/or HazCollect dissemination MUST include an instance of  <parameter> with a <valueName> of "EAS-ORG" with a <value> of the originator’s  SAME organization code.  
+        # Messages invoking the "Gubernatorial Must-Carry" rule MUST include a <parameter> with <valueName> of "EAS-Must-Carry" and value of "TRUE" for gubernatorial alerts.
+        # Messages intended for CMAS dissemination MAY include an instance of <parameter> with a <valueName> of "CMAMtext" and a <value> containing free form text limited in length to 90 English characters.
+
+        # TODO: 
+        # WMOHEADER info: http://www.weather.gov/tg/headef.html
         if key is not None and value is not None:
             self.parameters[key.strip()] = value.strip()
 
+    
     @staticmethod
     def aboutParameter():
         return u'A system specific additional parameter associated with the alert message'
@@ -791,6 +799,10 @@ class Area:
         return u'The circular area is represented by a central point given as a [WGS 84] coordinate pair followed by a space character and a radius value in kilometers.'
         
     def addGeoCode(self, key, value):
+        # TODO:
+        # (1) At least one instance of <geocode> with a <valueName> of “SAME” and a value of a SAME 6-digit location (extended FIPS) SHOULD be used. 
+        # (2) The more precise geospatial representations of the area, <polygon> and <circle>, SHOULD also be used whenever possible.
+        # (3) A SAME value of “000000” refers to ALL United States territory or territories.
         if key in self.geoCodes:
             x = self.geoCodes[key]
             x.append(value)
@@ -818,7 +830,300 @@ class Area:
     def aboutCeiling():
         return u'The maximum altitude of the affected area of the alert message.'
     
+class NWIS:
+    # per NATIONAL WEATHER SERVICE INSTRUCTION 10-518
+    # http://www.weather.gov/directives/sym/pd01005018curr.pdf
+    # and FCC EAS Rules 47 CFR 11.31, EAS Protocol
+    # http://ecfr.gpoaccess.gov/cgi/t/text/text-idx?c=ecfr&sid=e95bd2661c20ee82ede21961e6f2f3bd&rgn=div5&view=text&node=47:1.0.1.1.11&idno=47#47:1.0.1.1.11.2.239.1
+    # Note there are Spanish translations for some of these at http://www.weather.gov/directives/010/pd01017012c.pdf
+    nwis = dict({'ADR': 'Administrative Message',
+                 'AVA': 'Avalanche Warning',
+                 'AVW': 'Avalanche Watch',
+                 'CAE': 'Child Abduction Emergency',
+                 'CDW': 'Civil Danger Warning',
+                 'CEM': 'Civil Emergency Message',
+                 'EQW': 'Earthquake Warning',
+                 'EVI': 'Evacuate Immediate',
+                 'FRW': 'Fire Warning',
+                 'RWT': 'Required Weekly Test',
+                 'NPT': 'National Periodic Test',
+                 'HMW': 'Hazardous Materials Warning',
+                 'LEW': 'Law Enforcement Warning',
+                 'LAE': 'Local Area Emergency',
+                 'NUW': 'Nuclear Power Plant Warning',
+                 'RHW': 'Radiological Hazard Warning',
+                 'SPW': 'Shelter In Place Warning',
+                 'TOE': '911 Telephone Outage Warning',
+                 'VOW': 'Volcano Warning',
+                 'DMO': 'Practice/Demo Warning',
+                 'RMT': 'Required Monthly Test',
+                 'NST': 'National Silent Test',
+                 'NMN': 'Network Message Notification', # End NWSI 10-518
+                 'EAN': 'Emergency Action Notification (National only)',
+                 'EAT': 'Emergency Action Termination (National only)',
+                 'NIC': 'National Information Center',
+                 'RMT': 'Required Monthly Test',
+                 'BZW': 'Blizzard Warning',
+                 'CFW': 'Coastal Flood Watch',
+                 'CFA': 'Coastal Flood Advisory',
+                 'DSW': 'Dust Storm Watch',
+                 'FFW': 'Flash Flood Warning',
+                 'FFA': 'Flash Flood Watch',
+                 'FFS': 'Flash Flood Statement',
+                 'FLW': 'Flood Warning',
+                 'FLA': 'Flood Watch',
+                 'FLS': 'Flood Statement',
+                 'HWW': 'High Wind Warning',
+                 'HWA': 'High Wind Watch',
+                 'HUW': 'Hurricane Warning',
+                 'HUA': 'Hurricane Watch',
+                 'HLS': 'Hurricane Statement',
+                 'SVR': 'Severe Thunderstorm Warning',
+                 'SVA': 'Severe Thunderstorm Watch',
+                 'SVS': 'Severe Weather Statement',
+                 'SMW': 'Special Marine Warning',
+                 'SPS': 'Special Weather Statement',
+                 'TOR': 'Tornado Warning',
+                 'TOA': 'Tornado Watch',
+                 'TRW': 'Tropical Storm Warning',
+                 'TRA': 'Tropical Storm Watch',
+                 'TSW': 'Tsunami Warning',
+                 'TSA': 'Tsunami Watch',
+                 'WSW': 'Winter Storm Warning',
+                 'WSA': 'Winter Storm Watch',
+                 'LAE': 'Local Area Emergency',
+                 'TXF': 'Transmitter Carrier Off', # TX? should never be seen. But just in case...
+                 'TXO': 'Transmitter Carrier On',
+                 'TXB': 'Transmitter Backup On',
+                 'TXP': 'Transmitter Primary On',
+                 })
     
+    nwis_detail = dict({'ADR': 'A non-emergency message providing updated information about an event in progress, an event that has expired or concluded early, pre-event preparation or mitigation activities, post-event recovery operations, or other administrative matters pertaining to the Emergency Alert System.',
+                        'AVA': 'A message issued by authorized officials when conditions are forecast to become favorable for natural or human-triggered avalanches that could affect roadways, structures, or backcountry activities.',
+                        'AVW': 'A warning of current or imminent avalanche activity when  avalanche danger is considered high or extreme.',
+                        'CAE': 'An emergency message, based on established criteria, about a missing child believed to be abducted.',
+                        'CDW': 'A warning of an event that presents a danger to a significant civilian population.',
+                        'CEM': 'An emergency message regarding an in-progress or imminent significant threat(s) to public safety and/or property.',
+                        'EQW': 'A warning of current or imminent earthquake activity.',
+                        'EVI': 'A warning where immediate evacuation is recommended or ordered according to state law or local ordinance.',
+                        'FRW': 'A warning of a spreading structural fire or wildfire that threatens a populated area.',
+                        'HMW': 'A warning of the release of a non-radioactive hazardous material (such as a flammable gas, toxic chemical, or biological agent) that may recommend evacuation (for an explosion, fire or oil spill hazard) or shelter-in-place (for a toxic fume hazard).',
+                        'LEW': 'A warning of a bomb explosion, riot, or other criminal event (e.g. a jailbreak).',
+                        'LAE': 'An emergency message that defines an event that, by itself, does not pose a significant threat to public safety and/or property.',
+                        'NMN': 'Not yet defined and not in suite of products for relay by NWS.',
+                        'TOE': 'An emergency message that defines a local or state 9-1-1 telephone network outage by geographic area or telephone exchange',
+                        'NUW': 'A warning of an event at a nuclear power plant classified as a Site Area Emergency or General Emergency by the Nuclear Regulatory Commission (NRC)',
+                        'RHW': 'A warning of the loss, discovery, or release of a radiological hazard.',
+                        'SPW': 'A warning of an event where the public is recommended to shelter in place (go inside, close doors and windows, turn off air conditioning or heating systems, and turn on the radio or TV for more information)',
+                        'VOW': 'A warning of current or imminent volcanic activity.',
+                        })
     
+    same_definitions = dict({'Warning': 'Warning messages are issued for those events that alone pose a significant threat to public safety and/or property, probability of occurrence and location is high, and the onset time is relatively short.',
+                             'Watch': 'Watch messages are issued for those events that meet the classification of a warning, but either the onset time, probability of occurrence, or location is uncertain.',
+                             'Emergency': 'Emergency messages are issued for those events that by themselves would not kill or injure or do property damage but indirectly may cause other things to happen that result in a hazard. For example, a major power or telephone loss in a large city alone is not a direct hazard but disruption to other critical services could create a variety of conditions that could directly threaten public safety.',
+                             'Statement': 'Statements messages contain follow up information for warning, watch, or emergency messages.',
+                             })
+    @staticmethod
+    def aboutNWIS(nwis):
+        if nwis.upper() in NWIS.nwis_detail:
+            return NWIS.nwis_detail[nwis.upper()]
+        else:
+            if len(nwis) is 3:
+                if nwis[2] == 'W':
+                    return NWIS.same_definitions['Warning']
+                elif nwis[2] == 'A':
+                    return NWIS.same_definitions['Watch']
+                elif nwis[2] == 'E':
+                    return NWIS.same_definitions['Emergency']
+                elif nwis[2] == 'S':
+                    return NWIS.same_definitions['Statement']
+            return 'No detail available for this message type.'
+        
+    @staticmethod
+    def expandNWIS(nwis):
+        if nwis.upper() in NWIS.nwis:
+            return NWIS.nwis[nwis.upper()]
+        else:
+            return nwis
+class VTEC:
+    # http://www.weather.gov/om/vtec/
+    product_class = dict({'O': 'Operational Product',
+                  'T': 'Test Product',
+                  'E': 'Experimental Product',
+                  'X': 'Experimental VTEC in an Operational Product'
+        })
+    significance = dict({'W': 'Warning',
+                         'A': 'Watch',
+                         'Y': 'Advisory',
+                         'S': 'Statement',
+                         'F': 'Forecast',
+                         'O': 'Outlook',
+                         'N': 'Synopsis',
+                         })
+    actions = dict({'NEW': 'New Event',
+                    'CON': 'Event Continued',
+                    'EXT': 'Event Extended (Time)',
+                    'EXA': 'Event Extended (Area)',
+                    'EXB': 'Event Extended (Time and Area)',
+                    'UPG': 'Upgraded',
+                    'CAN': 'Event Canceled',
+                    'EXP': 'Event Expired',
+                    'COR': 'Correction',
+                    'ROU': 'Routine',
+                    })
+    phenomena = dict({
+                      'AF': 'Ashfall',
+                      'AS': 'Air Stagnation',
+                      'BS': 'Blowing Snow',
+                      'BW': 'Brisk Wind',
+                      'BZ': 'Blizzard',
+                      'CF': 'Coastal Flood',
+                      'DS': 'Dust Storm',
+                      'DU': 'Blowing Dust',
+                      'EC': 'Extreme Cold',
+                      'EH': 'Extreme Heat',
+                      'EW': 'Extreme Wind',
+                      'FA': 'Areal Flood',
+                      'FF': 'Flash Flood',
+                      'FG': 'Dense Fog',
+                      'FL': 'Flood',
+                      'FR': 'Frost',
+                      'FW': 'Fire Weather',
+                      'FZ': 'Freeze',
+                      'GL': 'Gale',
+                      'HF': 'Hurricane Force Wind',
+                      'HI': 'Inland Hurricane',
+                      'HS': 'Heavy Snow',
+                      'HT': 'Heat',
+                      'HU': 'Hurricane',
+                      'HW': 'High Wind',
+                      'HY': 'Hydrologic',
+                      'HZ': 'Hard Freeze',
+                      'IP': 'Sleet',
+                      'IS': 'Ice Storm',
+                      'LB': 'Lake Effect Snow and Blowing Snow',
+                      'LE': 'Lake Effect Snow',
+                      'LO': 'Low Water',
+                      'LS': 'Lakeshore Flood',
+                      'LW': 'Lake Wind',
+                      'MA': 'Marine',
+                      'RB': 'Small Craft for Rough Bar',
+                      'SB': 'Snow and Blowing Snow',
+                      'SC': 'Small Craft',
+                      'SE': 'Hazardous Seas',
+                      'SI': 'Small Craft for Winds',
+                      'SM': 'Dense Smoke',
+                      'SN': 'Snow',
+                      'SR': 'Storm',
+                      'SU': 'High Surf',
+                      'SV': 'Severe Thunderstorm',
+                      'SW': 'Small Craft for Hazardous Seas',
+                      'TI': 'Inland Tropical Storm',
+                      'TO': 'Tornado',
+                      'TR': 'Tropical Storm',
+                      'TS': 'Tsunami',
+                      'TY': 'Typhoon',
+                      'UP': 'Ice Accretion',
+                      'WC': 'Wind Chill',
+                      'WI': 'Wind',
+                      'WS': 'Winter Storm',
+                      'WW': 'Winter Weather',
+                      'ZF': 'Freezing Fog',
+                      'ZR': 'Freezing Rain',
+                      })
     
+    flood_severity = dict({
+                           'N': 'None',
+                           '0': 'Areal Flood or Flash Flood Product',
+                           '1': 'Minor',
+                           '2': 'Moderate',
+                           '3': 'Major',
+                           'U': 'Unknown'
+                           })
     
+    immediate_cause = dict({
+                            'ER': 'Excessive Rain',
+                            'SM': 'Snow Melt',
+                            'RS': 'Rain and Snow Melt',
+                            'DM': 'Dam or Levee Failure',
+                            'IJ': 'Ice Jam',
+                            'GO': 'Glacier-Dammed Lake Outburst',
+                            'IC': 'Rain and/or Snowmelt and/or Ice Jam',
+                            'FS': 'Upstream Flooding plus Storm Surge',
+                            'FT': 'Upstream Flooding plus Tidal Effects',
+                            'ET': 'Elevated Upstream Flow plus Tidal Effects',
+                            'WT': 'Wind and/or Tidal Effects',
+                            'DR': 'Upstream Dam or Reservior Release',
+                            'MC': 'Multiple Causes',
+                            'OT': 'Other Effects',
+                            'UU': 'Unknown'
+                            })
+    
+    flood_record_status = dict({
+                                'NO': 'A record flood is not expected',
+                                'NR': 'Near record or record flood expected',
+                                'UU': 'Flood without a period of record to compare',
+                                'OO': 'For areal flood warnings, areal flash flood products, and flood advisories (point and real)'
+                                })
+    @staticmethod
+    def getProductClass(pc):
+        if pc is not None:
+            if pc.upper() in VTEC.product_class:
+                return VTEC.product_class[pc.upper()]
+            else:
+                Log.warning('Unknown VTEC product class {0}'.format(pc))
+        return 'Unknown Product Class'
+    
+    @staticmethod
+    def getSignificance(sig):
+        if sig is not None:
+            if sig.upper() in VTEC.significance:
+                return VTEC.significance[sig.upper()]
+            else:
+                Log.warning('Unknown VTEC significance {0}'.format(sig))
+        return 'Unknown Significance'
+    
+    @staticmethod
+    def getActions(act):
+        if act is not None:
+            if act.upper() in VTEC.actions:
+                return VTEC.actions[act.upper()]
+            else:
+                Log.warning('Unknown VTEC action {0}'.format(act))
+        return 'Unknown Actions'
+    
+    @staticmethod
+    def getPhenomena(pp):
+        if pp is not None:
+            if pp.upper() in VTEC.phenomena:
+                return VTEC.phenomena[pp.upper()]
+            else:
+                Log.warning('Unknown VTEC phenomena {0}'.format(pp))
+        return 'Unknown Phenomena'
+    
+    @staticmethod
+    def getFloodSeverity(sev):
+        if sev is not None:
+            if sev in VTEC.flood_severity:
+                return VTEC.flood_severity[sev]
+            else:
+                Log.warning('Unknown VTEC Flood Severity {0}'.format(sev))
+        return 'Unknown Severity'
+    
+    @staticmethod
+    def getImmediateCause(ic):
+        if ic is not None:
+            if ic.upper() in VTEC.immediate_cause:
+                return VTEC.immediate_cause[ic.upper()]
+            else:
+                Log.warning("Unknown VTEC Immediate Cause {0}".format(ic))
+        return "Unknown Cause"
+    
+    @staticmethod
+    def getFloodRecordStatus(frs):
+        if frs is not None:
+            if frs.upper() in VTEC.flood_record_status:
+                return VTEC.flood_record_status[frs.upper()]
+            else:
+                Log.warning("Unknown Flood Record Status {0}".format(frs))
+        return "Unknown record status"

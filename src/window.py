@@ -104,7 +104,6 @@ class Window:
         self.window.show()
         
     def changepage_cb(self, notebook, page, page_num, data=None):
-        Log.debug("Changed page bro")
         p = self.notebook.get_nth_page(page_num)
         return True
         
@@ -137,29 +136,73 @@ class Window:
             else:
                 self.index = len(self.ids) - 1
             self.populateCap(self.alerts[self.ids[self.index]])
+    
+    def populatePVTEC(self, vtec):
+        vtec = vtec.strip(' /')
+        
+        self.__alert('P-VTEC Class', cap.VTEC.getProductClass(vtec[0]))
+        self.__alert('P-VTEC Actions', cap.VTEC.getActions(vtec[2:5]))
+        self.__alert('P-VTEC Office ID', vtec[6:10])
+        self.__alert('P-VTEC Phenomena', cap.VTEC.getPhenomena(vtec[11:13]))
+        self.__alert('P-VTEC Significance', cap.VTEC.getSignificance(vtec[14:15]))
+        self.__alert('P-VTEC Event Tracking Number', vtec[16:20])
+
+        try:
+            if vtec[21:33] != '000000T0000Z':
+                beginning = datetime.datetime.strptime(vtec[21:33],"%y%m%dT%H%MZ").replace(tzinfo=dateutil.tz.gettz('UTC'))
+                self.__alerttz('P-VTEC Event Beginning', beginning)
+        except:
+            Log.error("Invalid P-VTEC Event Beginning {0}".format(vtec[21:33]))
             
+        try:
+            if vtec[34:46] != '000000T0000Z':
+                end = datetime.datetime.strptime(vtec[34:46],"%y%m%dT%H%MZ").replace(tzinfo=dateutil.tz.gettz('UTC'))
+                self.__alerttz('P-VTEC Event End', end)
+        except:
+            Log.error("Invalid P-VTEC Event End {0}".format(vtec[34:46]))
+            
+    def populateHVTEC(self, vtec):
+        vtec = vtec.strip(' /')
+        self.__alert('H-VTEC NWS Location Id', vtec[0:5])
+        self.__alert('H-VTEC Flood Severity', cap.VTEC.getFloodSeverity(vtec[6]))
+        self.__alert('H-VTEC Immediate Cause', cap.VTEC.getImmediateCause(vtec[8:10]))
+        
+        try:
+            if vtec[11:23] != '000000T0000Z':
+                begin = datetime.datetime.strptime(vtec[11:23],"%y%m%dT%H%MZ").replace(tzinfo=dateutil.tz.gettz('UTC'))
+                self.__alerttz('H-VTEC Flood Begin Time', begin)
+        except:
+            Log.error("Invalid H-VTEC Crest Begin Time {0}".format(vtec[11:23]))
+        
+        try:
+            if vtec[24:36] != '000000T0000Z':
+                crest = datetime.datetime.strptime(vtec[24:36],"%y%m%dT%H%MZ").replace(tzinfo=dateutil.tz.gettz('UTC'))   
+                self.__alerttz('H-VTEC Flood Crest Time', crest)
+        except:
+            Log.error("Invalid H-VTEC Flood Crest Time {0}".format(vtec[24:36]))
+        try:
+            if vtec[37:49] != '000000T0000Z':
+                end = datetime.datetime.strptime(vtec[37:49],"%y%m%dT%H%MZ").replace(tzinfo=dateutil.tz.gettz('UTC'))
+                self.__alerttz('H-VTEC Flood End Time', end)
+        except:
+            Log.error("Invalid H-VTEC Flood End Time {0}".format(vtec[37:49]))
+            
+        self.__alert('H-VTEC Flood Record Status', cap.VTEC.getFloodRecordStatus(vtec[50:52]))
+        
     def populateCap(self, alert):
         try:
             self.capTitleBuffer.set_text(alert.id)
             self.keyTable.clear()
             while self.notebook.get_n_pages() > 0:
                 self.notebook.remove_page(-1)
-            self.__alert('Message ID', alert.id, cap.Alert.aboutId())
-            self.__alert('Version', alert.version)
-            self.__alert('Sender', alert.sender,cap.Alert.aboutSender())
-            self.__alerttz('Sent', alert.sent,cap.Alert.aboutSent())
-            self.__alert('Status', alert.status, cap.Alert.aboutStatus(), cap.Alert.aboutStatus(alert.status))
-            self.__alert('Message Type', alert.msgType, cap.Alert.aboutMsgType(), cap.Alert.aboutMsgType(alert.msgType))
-            self.__alert('Source', alert.source, cap.Alert.aboutSource())
-            self.__alert('Scope', alert.scope, cap.Alert.aboutScope(), cap.Alert.aboutScope(alert.scope))
-            self.__alert('Restriction', alert.restriction, cap.Alert.aboutRestriction())
-            self.__alert('Addresses', alert.addresses, cap.Alert.aboutAddresses())
             self.__alert('Note', alert.note, cap.Alert.aboutNote())
+            self.__alert('Message Type', alert.msgType, cap.Alert.aboutMsgType(), cap.Alert.aboutMsgType(alert.msgType))
             self.__alert('Incidents', alert.incidents, cap.Alert.aboutIncidents())
-            for code in alert.codes:
-                self.__alert('Code', code, cap.Alert.aboutCode())
-            for reference in alert.references:
-                self.__alert(reference, cap.Alert.aboutReferences())
+            self.__alert('Status', alert.status, cap.Alert.aboutStatus(), cap.Alert.aboutStatus(alert.status))
+            self.__alert('Scope', alert.scope, cap.Alert.aboutScope(), cap.Alert.aboutScope(alert.scope))
+            self.__alert('Addresses', alert.addresses, cap.Alert.aboutAddresses())
+            self.__alert('Restriction', alert.restriction, cap.Alert.aboutRestriction())
+            self.__alert('Source', alert.source, cap.Alert.aboutSource())
             
             for info in alert.infos:
                 tb = gtk.TextBuffer()
@@ -169,28 +212,40 @@ class Window:
                 self.notebook.set_current_page(pn)
                 self.notebook.show()
                 tv.show()
-                Log.debug("Added page {0}".format(pn))
-                self.__alert('Language', info.language, cap.Info.aboutLanguage())
+                self.__alert('Sender Name', info.senderName, cap.Info.aboutSenderName())
                 for c in info.categories:
                     self.__alert('Category', c, cap.Info.aboutCategory(), cap.Info.aboutCategory(c))
-                if info.event is not None:
+                if info.event is not None and info.event is not 'UNTITLED EVENT':
                     self.__alert('Event', info.event, cap.Info.aboutEvent())
                     self.capTitleBuffer.set_text(info.event)
-                for e in info.responseTypes:
-                    self.__alert('Response Type', e, cap.Info.aboutResponseType(), cap.Info.aboutResponseType(e))
                 self.__alert('Urgency', info.urgency, cap.Info.aboutUrgency(), cap.Info.aboutUrgency(info.urgency))
                 self.__alert('Severity', info.severity, cap.Info.aboutSeverity(), cap.Info.aboutSeverity(info.severity))
                 self.__alert('Certainty', info.certainty, cap.Info.aboutCertainty(), cap.Info.aboutCertainty(info.certainty))
+                for e in info.responseTypes:
+                    self.__alert('Response Type', e, cap.Info.aboutResponseType(), cap.Info.aboutResponseType(e))
                 self.__alert('Audience', info.audience, cap.Info.aboutAudience())
-                self.__alerttz('Effective', info.effective, cap.Info.aboutEffective())
                 for code in info.eventCodes:
                     self.__alert(code, info.eventCodes[code], cap.Info.aboutEventCode())
+                self.__alerttz('Effective', info.effective, cap.Info.aboutEffective())
                 self.__alerttz('Onset', info.onset, cap.Info.aboutOnset())
                 self.__alerttz('Expires', info.expires, cap.Info.aboutExpires())
-                self.__alert('Sender Name', info.senderName, cap.Info.aboutSenderName())
                 self.__alert('Web', info.web, cap.Info.aboutWeb(), url=info.web)
                 self.__alert('Contact', info.contact, cap.Info.aboutContact())
                 for p in info.parameters:
+                    if p == 'P-VTEC':
+                        self.populatePVTEC(info.parameters[p])
+                        continue
+                    if p == 'H-VTEC':
+                        self.populateHVTEC(info.parameters[p])
+                        continue
+                    if p == 'VTEC':
+                        for chunk in info.parameters[p].split('/'):
+                            if len(chunk) is 46:
+                                self.populatePVTEC(chunk)
+                            elif len(chunk) is 52:
+                                self.populateHVTEC(chunk)
+                        continue
+                    
                     self.__alert(p, info.parameters[p], cap.Info.aboutParameter())
                 
                 helper = str()
@@ -202,6 +257,8 @@ class Window:
                 helper += 'Instructions:\n\n'
                 if info.instruction is not None:
                     helper += info.instruction
+                self.__alert('Language', info.language, cap.Info.aboutLanguage())
+
                 tb.set_text(helper)
                 file = open('../marker-simple.html')
                 
@@ -212,18 +269,21 @@ class Window:
                         label = gtk.Label('Map')
                         pn = self.notebook.append_page(webview, label)
                         webview.show()
-                        Log.debug("Added page {0} for poly map.".format(pn))
-                        #self.__alert('Map link', 'Google Maps...', url=utils.mapPolygon(polygon))
                         webview.load_html_string(utils.mapPolygon(polygon),'http://localhost/testing')
-                        #self.webview.open(utils.mapPolygon(polygon))
                     for circle in area.circles:
                         webview = webkit.WebView()
                         label = gtk.Label('Map')
                         pn = self.notebook.append_page(webview, label)
                         webview.show()
-                        #self.__alert('Map link', utils.mapCircle(circle), url=utils.mapPolygon(polygon))
-                        Log.debug("Added page {0} for circle map.".format(pn))
                         webview.load_html_string(utils.mapCircle(circle),'http://localhost/testing')
+            for code in alert.codes:
+                self.__alert('Code', code, cap.Alert.aboutCode())
+            for reference in alert.references:
+                self.__alert(reference, cap.Alert.aboutReferences())
+            self.__alert('Sender', alert.sender,cap.Alert.aboutSender())
+            self.__alerttz('Sent', alert.sent,cap.Alert.aboutSent())
+            self.__alert('Version', alert.version)
+            self.__alert('Message ID', alert.id, cap.Alert.aboutId())
                         
         except AttributeError:
             Log.error("Attribute error while populating window from CAP {0}.".format(alert.id), exc_info=True)

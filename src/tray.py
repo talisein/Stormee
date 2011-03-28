@@ -96,7 +96,7 @@ class CAPTray:
                 if alert is None:
                     continue
                 
-                if alert.checkArea('FIPS6',FIPSCODE) or alert.checkArea('UGC',UGCCODE) or alert.checkCoords(LATLONG_COORDS):
+                if alert.checkArea('FIPS6',FIPSCODE) or alert.checkArea('UGC',UGCCODE) or alert.checkCoords(LATLONG_COORDS) or alert.checkArea('FIPS6', '000000'):
                     if not alert.isExpired():
                         self.caps[newEntry.caplink] = alert
                         if not isInitial:
