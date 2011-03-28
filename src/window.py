@@ -151,6 +151,8 @@ class Window:
             if vtec[21:33] != '000000T0000Z':
                 beginning = datetime.datetime.strptime(vtec[21:33],"%y%m%dT%H%MZ").replace(tzinfo=dateutil.tz.gettz('UTC'))
                 self.__alerttz('P-VTEC Event Beginning', beginning)
+            else:
+                self.__alert('P-VTEC Event Beginning', 'Ongoing')
         except:
             Log.error("Invalid P-VTEC Event Beginning {0}".format(vtec[21:33]))
             
@@ -158,6 +160,8 @@ class Window:
             if vtec[34:46] != '000000T0000Z':
                 end = datetime.datetime.strptime(vtec[34:46],"%y%m%dT%H%MZ").replace(tzinfo=dateutil.tz.gettz('UTC'))
                 self.__alerttz('P-VTEC Event End', end)
+            else:
+                self.__alert('P-VTEC Event End', 'Until Further Notice')
         except:
             Log.error("Invalid P-VTEC Event End {0}".format(vtec[34:46]))
             
@@ -171,6 +175,8 @@ class Window:
             if vtec[11:23] != '000000T0000Z':
                 begin = datetime.datetime.strptime(vtec[11:23],"%y%m%dT%H%MZ").replace(tzinfo=dateutil.tz.gettz('UTC'))
                 self.__alerttz('H-VTEC Flood Begin Time', begin)
+            else:
+                self.__alerttz('H-VTEC Flood Begin Time', 'Ongoing')
         except:
             Log.error("Invalid H-VTEC Crest Begin Time {0}".format(vtec[11:23]))
         
@@ -184,6 +190,8 @@ class Window:
             if vtec[37:49] != '000000T0000Z':
                 end = datetime.datetime.strptime(vtec[37:49],"%y%m%dT%H%MZ").replace(tzinfo=dateutil.tz.gettz('UTC'))
                 self.__alerttz('H-VTEC Flood End Time', end)
+            else:
+                self.__alert('H-VTEC Flood End Time', 'Until Further Notice')
         except:
             Log.error("Invalid H-VTEC Flood End Time {0}".format(vtec[37:49]))
             
