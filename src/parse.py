@@ -50,7 +50,15 @@ class Entry:
             self.fips.append(fips)
 
     def checkFips(self, fips):
-        return fips in self.fips
+        '''
+        fips: 5 digit string
+        '''
+        assert len(fips) is 5
+        for fip in self.fips:
+            assert len(fip) is 6
+            if fip[1:6] == fips:
+                return True
+        return False
     
     def addCapLink(self, link):
         self.caplink = link

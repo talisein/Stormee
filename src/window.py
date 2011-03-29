@@ -233,7 +233,10 @@ class Window:
                     self.__alert('Response Type', e, cap.Info.aboutResponseType(), cap.Info.aboutResponseType(e))
                 self.__alert('Audience', info.audience, cap.Info.aboutAudience())
                 for code in info.eventCodes:
-                    self.__alert(code, info.eventCodes[code], cap.Info.aboutEventCode())
+                    if code == 'SAME':
+                        self.__alert(code, cap.NWIS.expandNWIS(info.eventCodes[code]))
+                    else:
+                        self.__alert(code, info.eventCodes[code], cap.Info.aboutEventCode())
                 self.__alerttz('Effective', info.effective, cap.Info.aboutEffective())
                 self.__alerttz('Onset', info.onset, cap.Info.aboutOnset())
                 self.__alerttz('Expires', info.expires, cap.Info.aboutExpires())

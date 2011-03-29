@@ -78,12 +78,32 @@ class Alert:
                         return True
         return False
 
+    def checkUGC(self, state='CA', fips='06000', nws_zone='000'):
+        for info in self.infos:
+            for area in info.areas:
+                if 'UGC' in area.geoCodes:
+                    for ugc_string in area.geoCodes['UGC']:
+                        if UGC.matchUGC(ugc_string, state, fips, nws_zone):
+                            return True
+                if 'FIPS6' in area.geoCodes:
+                    for x in area.geoCodes['FIPS6']:
+                        if len(x) > 5:
+                            x = x[len(x)-5:len(x)]
+                            if x == fips:
+                                return True
+                if 'FIPS' in area.geoCodes:
+                    for x in area.geoCodes['FIPS']:
+                        if len(x) > 5:
+                            x = x[len(x)-5:len(x)]
+                            if x == fips:
+                                return True
+        return False
+
     def checkCoords(self, coords):
         for info in self.infos:
             for area in info.areas:
                 for circle in area.circles:
                     x, y, radius = circle
-                    Log.debug("The distance is %s" % utils.distance((x,y), coords))
                     if utils.distance((x,y), coords) < radius:
                         return True
                 for polygon in area.polygons:
@@ -1128,5 +1148,97 @@ class VTEC:
                 Log.warning("Unknown Flood Record Status {0}".format(frs))
         return 'Unknown record status'
     
+class UGC:
+    FORMAT_FIPS = object()
+    FORMAT_ZONE = object()
+    FORMATS = dict({
+                    'C': FORMAT_FIPS,
+                    'Z': FORMAT_ZONE
+                    })
+    
+    @staticmethod
+    def matchUGC(ugc, state, FIPS='000', nws_zone='000'):
+        '''
+        ugc: Full UGC string
+        state: 2 letter string, post office ugc_state abbreviation
+        '''
+        if len(FIPS) > 3:
+            FIPS = FIPS[len(FIPS)-3:len(FIPS)]
+        ugc_state = None
+        ugc_format = None
+        if ugc is not None:
+            for segment in ugc.split('-'):
+                if segment[0:2].isalpha():
+                    ugc_state = segment[0:2]
+                    if state != ugc_state:
+                        continue
+                    if segment[3:6] is 'ALL' or segment[3:6] is '000':
+                        return True
+                    ugc_format = UGC.FORMATS[segment[2]]
+                    if len(segment) is 6:
+                        if ugc_format is UGC.FORMAT_FIPS:
+                            if segment[3:6] == FIPS:
+                                return True
+                            else:
+                                continue
+                        elif ugc_format is UGC.FORMAT_ZONE:
+                            if segment[3:6] == nws_zone:
+                                return True
+                            else:
+                                continue
+                        else:
+                            Log.error('Error parsing UGC code {0} at segment {1}'.format(ugc, segment))
+                    elif len(segment) is 10:                        
+                        start, end = segment[3:10].split('>')
+                        start = int(start)
+                        end = int(end)
+                        if ugc_format is UGC.FORMAT_FIPS:
+                            target = int(FIPS)
+                        elif ugc_format is UGC.FORMAT_ZONE:
+                            target = int(nws_zone)
+                        if target >= start and target <= end:
+                            return True
+                        else:
+                            continue
+                    else:
+                        Log.error('Error parsing UGC code {0} at segment {1}'.format(ugc, segment))
+                elif len(segment) is 3:
+                    if state != ugc_state:
+                        continue
+                    if ugc_format is UGC.FORMAT_FIPS:
+                        if segment == FIPS:
+                            return True
+                        else:
+                            continue
+                    elif ugc_format is UGC.FORMAT_ZONE:
+                        if segment == nws_zone:
+                            return True
+                        else:
+                            continue
+                    else:
+                        Log.error('Error parsing UGC code {0} at segment {1}'.format(ugc, segment))
+                elif len(segment) is 7:
+                    if state != ugc_state:
+                        continue
+                    start, end = segment.split('>')
+                    start = int(start)
+                    end = int(end)
+                    if ugc_format is UGC.FORMAT_FIPS:
+                        target = int(FIPS)
+                    elif ugc_format is UGC.FORMAT_ZONE:
+                        target = int(nws_zone)
+                    if target >= start and target <= end:
+                        return True
+                    else:
+                        continue
+                elif len(segment) is 6:
+                    Log.debug('Found UGC datetime {0} in UGC {1}'.format(segment, ugc))
+                    continue
+                else:
+                    if len(segment) > 0:
+                        Log.error('Unexpected UGC segment {0} in {1}'.format(segment, ugc))
+                    continue
+        return False
+                        
 # TODO: UGC codes
 # http://www.weather.gov/directives/sym/pd01017002curr.pdf

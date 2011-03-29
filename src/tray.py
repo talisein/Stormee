@@ -33,8 +33,9 @@ Log = logging.getLogger()
 
 
 LATLONG_COORDS = (38.56513,-121.75156)
-FIPSCODE = '006113'
-UGCCODE = 'CAZ017'
+STATECODE = 'CA'
+FIPSCODE = '06113'
+UGCCODE = '017'
 
 class CAPTray:
 
@@ -96,7 +97,7 @@ class CAPTray:
                 if alert is None:
                     continue
                 
-                if alert.checkArea('FIPS6',FIPSCODE) or alert.checkArea('UGC',UGCCODE) or alert.checkCoords(LATLONG_COORDS) or alert.checkArea('FIPS6', '000000'):
+                if alert.checkUGC(STATECODE, FIPSCODE, UGCCODE) or alert.checkCoords(LATLONG_COORDS) or alert.checkArea('FIPS6', '000000'):
                     if not alert.isExpired():
                         self.caps[newEntry.caplink] = alert
                         if not isInitial:
