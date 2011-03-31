@@ -21,6 +21,7 @@
 from datetime import datetime
 from datetime import timedelta
 from dateutil import parser as dateparser
+import dateutil
 import logging 
 import base64
 import utils
@@ -70,6 +71,20 @@ class Alert:
         self.note = None
         self.incidents = None
         
+    def getTitle(self):
+        for info in self.infos:
+            if info.vtec is not None:
+                return str.format("{0} {1}", info.vtec.phenomena, info.vtec.significance)
+            elif 'SAME' in info.eventCodes:
+                return NWIS.expandNWIS(info.eventCodes['SAME'])
+            elif info.event is not None:
+                return info.event
+            elif self.note is not None:
+                return self.note[0:90]
+            else:
+                return self.id
+
+
     def checkArea(self, type, code):
         for info in self.infos:
             for area in info.areas:
@@ -300,8 +315,8 @@ class Alert:
                     (sender,identifier,sent) = reference.split(references,',')
                     self.references.append(identifier)
                 else:
-                    if len(reference) > 0:
-                        Log.warning("Failure to parse references. \"{0}\"".format(references))
+                    self.references.append(reference)
+                    Log.warning("Reference {0} not valid to specifications".format(reference))
                     
     @staticmethod
     def aboutReferences():
@@ -329,27 +344,84 @@ class Alert:
             
 class Info:
     # In addition to the specified subelements, MAY contain one or more <resource> blocks and/or one or more <area> blocks
-    CATEGORY_GEO = u'Geo'
-    CATEGORY_MET = u'Met'
-    CATEGORY_SAFETY = u'Safety'
-    CATEGORY_SECURITY = u'Security'
-    CATEGORY_RESCUE = u'Rescue'
-    CATEGORY_FIRE = u'Fire'
-    CATEGORY_HEALTH = u'Health'
-    CATEGORY_ENV = u'Env'
-    CATEGORY_TRANSPORT = u'Transport'
-    CATEGORY_INFRA = u'Infra'
-    CATEGORY_CBRNE = u'CBRNE'
-    CATEGORY_OTHER = u'Other'
+    CATEGORY_GEO = 'Geo'
+    CATEGORY_MET = 'Met'
+    CATEGORY_SAFETY = 'Safety'
+    CATEGORY_SECURITY = 'Security'
+    CATEGORY_RESCUE = 'Rescue'
+    CATEGORY_FIRE = 'Fire'
+    CATEGORY_HEALTH = 'Health'
+    CATEGORY_ENV = 'Env'
+    CATEGORY_TRANSPORT = 'Transport'
+    CATEGORY_INFRA = 'Infra'
+    CATEGORY_CBRNE = 'CBRNE'
+    CATEGORY_OTHER = 'Other'
 
-    RESPONSE_SHELTER = u'Shelter'
-    RESPONSE_EVACUATE = u'Evacuate'
-    RESPONSE_PREPARE = u'Prepare'
-    RESPONSE_EXECUTE = u'Execute'
-    RESPONSE_MONITOR = u'Monitor'
-    RESPONSE_ASSESS = u'Assess'
-    RESPONSE_NONE = u'None'
-    RESPONSE_ALLCLEAR = u'All Clear'
+    CATEGORIES = dict({
+                       'Geo': CATEGORY_GEO,
+                       'Met': CATEGORY_MET,
+                       'Safety': CATEGORY_SAFETY,
+                       'Security': CATEGORY_SECURITY,
+                       'Rescue': CATEGORY_RESCUE,
+                       'Fire': CATEGORY_FIRE,
+                       'Health': CATEGORY_HEALTH,
+                       'Env': CATEGORY_ENV,
+                       'Transport': CATEGORY_TRANSPORT,
+                       'Infra': CATEGORY_INFRA,
+                       'CBRNE': CATEGORY_CBRNE,
+                       'Other': CATEGORY_OTHER,
+                       })
+
+    ABOUT_CATEGORIES = dict({
+                       None: 'The code denoting the category of the subject event of the alert message.',
+                       CATEGORY_GEO: 'Geophysical (inc. landslide)',
+                       CATEGORY_MET: 'Meteorological (inc. flood)',
+                       CATEGORY_SAFETY: 'General emergency and public safety',
+                       CATEGORY_SECURITY: 'Law enforcement, military, homeland and local/private security',
+                       CATEGORY_RESCUE: 'Rescue and recovery',
+                       CATEGORY_FIRE: 'Fire suppression and rescue',
+                       CATEGORY_HEALTH: 'Medical and public health',
+                       CATEGORY_ENV: 'Pollution and other environmental',
+                       CATEGORY_TRANSPORT: 'Public and private transportation',
+                       CATEGORY_INFRA: 'Utility, telecommunication, other non-transport infrastructure',
+                       CATEGORY_CBRNE: 'Chemical, Biological, Radiological, Nuclear or High-Yield Explosive threat or attack',
+                       CATEGORY_OTHER: 'Other events',
+                       })
+
+    RESPONSE_SHELTER = 'Shelter'
+    RESPONSE_EVACUATE = 'Evacuate'
+    RESPONSE_PREPARE = 'Prepare'
+    RESPONSE_EXECUTE = 'Execute'
+    RESPONSE_AVOID = 'Avoid'
+    RESPONSE_MONITOR = 'Monitor'
+    RESPONSE_ASSESS = 'Assess'
+    RESPONSE_ALLCLEAR = 'All Clear'
+    RESPONSE_NONE = 'None'
+
+    RESPONSES = dict({
+                      'Shelter': RESPONSE_SHELTER,
+                      'Evacuate': RESPONSE_EVACUATE,
+                      'Prepare': RESPONSE_PREPARE,
+                      'Execute': RESPONSE_EXECUTE,
+                      'Avoid': RESPONSE_AVOID,
+                      'Monitor': RESPONSE_MONITOR,
+                      'Assess': RESPONSE_ASSESS,
+                      'All Clear': RESPONSE_ALLCLEAR,
+                      'None': RESPONSE_NONE,
+                      })
+    
+    ABOUT_RESPONSES = dict({
+                            None: 'The code denoting the type of action recommended for the target audience.',
+                            RESPONSE_SHELTER: 'Take shelter in place or per <instruction>',
+                            RESPONSE_EVACUATE: 'Relocate as instructed in the <instruction>',
+                            RESPONSE_PREPARE: 'Make preparations per the <instruction>',
+                            RESPONSE_EXECUTE: 'Execute a pre-planned activity identified in <instruction>',
+                            RESPONSE_AVOID: 'Avoid the subject event as perthe <instruction>',
+                            RESPONSE_MONITOR: 'Attend to information sources as described in <instruction>',
+                            RESPONSE_ASSESS: 'Evaluate the information in this message',
+                            RESPONSE_ALLCLEAR: 'The subject event no longer poses a threat or concern and any follow on action is described in <instruction>',
+                            RESPONSE_NONE: 'No action recommended',
+                            })
     
     URGENCY_IMMEDIATE = u'Immediate'
     URGENCY_EXPECTED = u'Expected'
@@ -391,6 +463,8 @@ class Info:
         self.instruction = None
         self.web = None
         self.contact = None
+        self.vtec = None
+        
     def setLanguage(self, language):
         if len(language) > 0:
             self.language = language.strip()
@@ -401,66 +475,21 @@ class Info:
     def aboutLanguage():
         return u'The code denoting the language of the info subelement of the alert message'
 
+
     def addCategory(self, category):
         if category is not None:
             category = category.strip()
-            if category == u'Geo':
-                self.categories.add(Info.CATEGORY_GEO)
-            elif category == u'Met':
-                self.categories.add(Info.CATEGORY_MET)
-            elif category == u'Safety':
-                self.categories.add(Info.CATEGORY_SAFETY)
-            elif category == u'Security':
-                self.categories.add(Info.CATEGORY_SECURITY)
-            elif category == u'Rescue':
-                self.categories.add(Info.CATEGORY_RESCUE)
-            elif category == u'Fire':
-                self.categories.add(Info.CATEGORY_FIRE)
-            elif category == u'Health':
-                self.categories.add(Info.CATEGORY_HEALTH)
-            elif category == u'Env':
-                self.categories.add(Info.CATEGORY_ENV)
-            elif category == u'Transport':
-                self.categories.add(Info.CATEGORY_TRANSPORT)
-            elif category == u'Infra':
-                self.categories.add(Info.CATEGORY_INFRA)
-            elif category == u'CBRNE':
-                self.categories.add(Info.CATEGORY_CBRNE)
-            elif category == u'Other':
-                self.categories.add(Info.CATEGORY_OTHER)
+            if category in Info.CATEGORIES:
+                self.categories.add(Info.CATEGORIES[category])
             else:
-                Log.error("Unknown category \"%s\"" % category)
+                Log.error("Unknown category {0}".format(category))
 
     @staticmethod
     def aboutCategory(category=None):
-        if category is None:
-            return u'The code denoting the category of the subject event of the alert message.'
-        elif category is Info.CATEGORY_CBRNE:
-            return u'Chemical, Biological, Radiological, Nuclear or High-Yield Explosive threat or attack.'
-        elif category is Info.CATEGORY_ENV:
-            return u'Pollution and other environmental.'
-        elif category is Info.CATEGORY_FIRE:
-            return u'Fire suppression and rescue.'
-        elif category is Info.CATEGORY_GEO:
-            return u'Geophysical (inc. landslide).'
-        elif category is Info.CATEGORY_HEALTH:
-            return u'Medical and public health.'
-        elif category is Info.CATEGORY_INFRA:
-            return u'Utility, telecommunication, other non-transport infrastructure.'
-        elif category is Info.CATEGORY_MET:
-            return u'Meteorological (inc. flood).'
-        elif category is Info.CATEGORY_OTHER:
-            return u'Other events.'
-        elif category is Info.CATEGORY_RESCUE:
-            return u'Rescue and recovery.'
-        elif category is Info.CATEGORY_SAFETY:
-            return u'General emergency and public safety.'
-        elif category is Info.CATEGORY_SECURITY:
-            return u'Law enforcement, military, homeland and local/private security.'
-        elif category is Info.CATEGORY_TRANSPORT:
-            return u'Public and private transportation.'
+        if category in Info.ABOUT_CATEGORIES:
+            return Info.ABOUT_CATEGORIES[category]
         else:
-            return u'Invalid category \"%s\"'% category
+            return "No explanation for category {0}".format(category)
 
     def setEvent(self, event):
         if event is not None:
@@ -474,47 +503,17 @@ class Info:
     def addResponseType(self, responseType):
         if responseType is not None:
             responseType = responseType.strip()
-            if responseType == u'Shelter':
-                self.responseTypes.add(Info.RESPONSE_SHELTER)
-            elif responseType == u'Evacuate':
-                self.responseTypes.add(Info.RESPONSE_EVACUATE)
-            elif responseType == u'Prepare':
-                self.responseTypes.add(Info.RESPONSE_PREPARE)
-            elif responseType == u'Execute':
-                self.responseTypes.add(Info.RESPONSE_EXECUTE)
-            elif responseType == u'Monitor':
-                self.responseTypes.add(Info.RESPONSE_MONITOR)
-            elif responseType == u'Assess':
-                self.responseTypes.add(Info.RESPONSE_ASSESS)
-            elif responseType == u'None':
-                self.responseTypes.add(Info.RESPONSE_NONE)
-            elif responseType == u'AlLClear':
-                self.responseTypes.add(Info.RESPONSE_ALLCLEAR)
+            if responseType in Info.RESPONSES:
+                self.responseTypes.add(Info.RESPONSES[responseType])
             else:
                 Log.error("Invalid reponseType \"%s\"" % responseType)
     
     @staticmethod
     def aboutResponseType(responseType=None):
-        if responseType is None:
-            return u'The code denoting the type of action recommended for the target audience.'
-        elif responseType is Info.RESPONSE_SHELTER:
-            return u'Take shelter in place or per <instruction>.'
-        elif responseType is Info.RESPONSE_EVACUATE:
-            return u'Relocate as instructed in the <instruction>.'
-        elif responseType is Info.RESPONSE_PREPARE:
-            return u'Make preparations per the <instruction>.'
-        elif responseType is Info.RESPONSE_EXECUTE:
-            return u'Execute a pre-planned activity identified in <instruction>.'
-        elif responseType is Info.RESPONSE_MONITOR:
-            return u'Attend to information sources as described in <instruction>.'
-        elif responseType is Info.RESPONSE_ASSESS:
-            return u'Evaluate the information in this message.'
-        elif responseType is Info.RESPONSE_NONE:
-            return u'No action recommended.'
-        elif responseType is Info.RESPONSE_ALLCLEAR:
-            return u'The subject event no longer poses a threat or concern and any follow on action is described in <instruction>'
+        if responseType in Info.ABOUT_RESPONSES:
+            return Info.ABOUT_RESPONSES[responseType]
         else:
-            return u"Invalid responseType %s" % responseType
+            return "No explanation for category {0}".format(responseType)
         
     def setUrgency(self, urgency):
         if urgency is not None:
@@ -729,6 +728,9 @@ class Info:
     def aboutParameter():
         return u'A system specific additional parameter associated with the alert message'
 
+    def setVTEC(self, vtec):
+        self.vtec = VTEC(vtec)
+        
     def addResource(self, resource):
         if resource is not None:
             self.resources.append(resource.strip())
@@ -967,12 +969,12 @@ class NWIS:
             return nwis
 class VTEC:
     # http://www.weather.gov/om/vtec/
-    product_class = dict({'O': 'Operational Product',
+    PRODUCT_CLASSES = dict({'O': 'Operational Product',
                   'T': 'Test Product',
                   'E': 'Experimental Product',
                   'X': 'Experimental VTEC in an Operational Product'
         })
-    significance = dict({'W': 'Warning',
+    SIGNIFICANCES = dict({'W': 'Warning',
                          'A': 'Watch',
                          'Y': 'Advisory',
                          'S': 'Statement',
@@ -980,7 +982,7 @@ class VTEC:
                          'O': 'Outlook',
                          'N': 'Synopsis',
                          })
-    actions = dict({'NEW': 'New Event',
+    ACTIONS = dict({'NEW': 'New Event',
                     'CON': 'Event Continued',
                     'EXT': 'Event Extended (Time)',
                     'EXA': 'Event Extended (Area)',
@@ -991,7 +993,7 @@ class VTEC:
                     'COR': 'Correction',
                     'ROU': 'Routine',
                     })
-    phenomena = dict({
+    PHENOMENAS = dict({
                       'AF': 'Ashfall',
                       'AS': 'Air Stagnation',
                       'BS': 'Blowing Snow',
@@ -1052,7 +1054,7 @@ class VTEC:
                       'ZR': 'Freezing Rain',
                       })
     
-    flood_severity = dict({
+    FLOOD_SEVERITIES = dict({
                            'N': 'None',
                            '0': 'Areal Flood or Flash Flood Product',
                            '1': 'Minor',
@@ -1061,7 +1063,7 @@ class VTEC:
                            'U': 'Unknown'
                            })
     
-    immediate_cause = dict({
+    IMMEDIATE_CAUSES = dict({
                             'ER': 'Excessive Rain',
                             'SM': 'Snow Melt',
                             'RS': 'Rain and Snow Melt',
@@ -1079,7 +1081,7 @@ class VTEC:
                             'UU': 'Unknown'
                             })
     
-    flood_record_status = dict({
+    FLOOD_RECORD_STATUSES = dict({
                                 'NO': 'A record flood is not expected',
                                 'NR': 'Near record or record flood expected',
                                 'UU': 'Flood without a period of record to compare',
@@ -1088,8 +1090,8 @@ class VTEC:
     @staticmethod
     def getProductClass(pc):
         if pc is not None:
-            if pc.upper() in VTEC.product_class:
-                return VTEC.product_class[pc.upper()]
+            if pc.upper() in VTEC.PRODUCT_CLASSES:
+                return VTEC.PRODUCT_CLASSES[pc.upper()]
             else:
                 Log.warning('Unknown VTEC product class {0}'.format(pc))
         return 'Unknown Product Class'
@@ -1097,17 +1099,17 @@ class VTEC:
     @staticmethod
     def getSignificance(sig):
         if sig is not None:
-            if sig.upper() in VTEC.significance:
-                return VTEC.significance[sig.upper()]
+            if sig.upper() in VTEC.SIGNIFICANCES:
+                return VTEC.SIGNIFICANCES[sig.upper()]
             else:
-                Log.warning('Unknown VTEC significance {0}'.format(sig))
+                Log.warning('Unknown VTEC SIGNIFICANCES {0}'.format(sig))
         return 'Unknown Significance'
     
     @staticmethod
     def getActions(act):
         if act is not None:
-            if act.upper() in VTEC.actions:
-                return VTEC.actions[act.upper()]
+            if act.upper() in VTEC.ACTIONS:
+                return VTEC.ACTIONS[act.upper()]
             else:
                 Log.warning('Unknown VTEC action {0}'.format(act))
         return 'Unknown Actions'
@@ -1115,8 +1117,8 @@ class VTEC:
     @staticmethod
     def getPhenomena(pp):
         if pp is not None:
-            if pp.upper() in VTEC.phenomena:
-                return VTEC.phenomena[pp.upper()]
+            if pp.upper() in VTEC.PHENOMENAS:
+                return VTEC.PHENOMENAS[pp.upper()]
             else:
                 Log.warning('Unknown VTEC phenomena {0}'.format(pp))
         return 'Unknown Phenomena'
@@ -1124,8 +1126,8 @@ class VTEC:
     @staticmethod
     def getFloodSeverity(sev):
         if sev is not None:
-            if sev in VTEC.flood_severity:
-                return VTEC.flood_severity[sev]
+            if sev in VTEC.FLOOD_SEVERITIES:
+                return VTEC.FLOOD_SEVERITIES[sev]
             else:
                 Log.warning('Unknown VTEC Flood Severity {0}'.format(sev))
         return 'Unknown Severity'
@@ -1133,8 +1135,8 @@ class VTEC:
     @staticmethod
     def getImmediateCause(ic):
         if ic is not None:
-            if ic.upper() in VTEC.immediate_cause:
-                return VTEC.immediate_cause[ic.upper()]
+            if ic.upper() in VTEC.IMMEDIATE_CAUSES:
+                return VTEC.IMMEDIATE_CAUSES[ic.upper()]
             else:
                 Log.warning("Unknown VTEC Immediate Cause {0}".format(ic))
         return "Unknown Cause"
@@ -1142,12 +1144,89 @@ class VTEC:
     @staticmethod
     def getFloodRecordStatus(frs):
         if frs is not None:
-            if frs.upper() in VTEC.flood_record_status:
-                return VTEC.flood_record_status[frs.upper()]
+            if frs.upper() in VTEC.FLOOD_RECORD_STATUSES:
+                return VTEC.FLOOD_RECORD_STATUSES[frs.upper()]
             else:
                 Log.warning("Unknown Flood Record Status {0}".format(frs))
         return 'Unknown record status'
     
+    def __init__(self, vtec=""):
+        self.hasPVTEC = False
+        self.hasHVTEC = False
+        self.populateVTEC(vtec)
+        
+    def populatePVTEC(self, vtec):
+        vtec = vtec.strip(' /')
+        self.product_class = VTEC.getProductClass(vtec[0])
+        self.actions = VTEC.getActions(vtec[2:5])
+        self.office_id = vtec[6:10]
+        self.phenomena = VTEC.getPhenomena(vtec[11:13])
+        self.significance = VTEC.getSignificance(vtec[14:15])
+        self.event_tracking_number = vtec[16:20]
+        self.begin = None
+        self.end = None
+        
+        try:
+            if vtec[21:33] != '000000T0000Z':
+                self.begin = datetime.strptime(vtec[21:33],"%y%m%dT%H%MZ").replace(tzinfo=dateutil.tz.gettz('UTC'))
+            else:
+                self.begin = None
+        except:
+            Log.error("Invalid P-VTEC Event Beginning {0}".format(vtec[21:33]), exc_info=True)
+            
+        try:
+            if vtec[34:46] != '000000T0000Z':
+                self.end = datetime.strptime(vtec[34:46],"%y%m%dT%H%MZ").replace(tzinfo=dateutil.tz.gettz('UTC'))
+            else:
+                self.end = None
+        except:
+            Log.error("Invalid P-VTEC Event End {0}".format(vtec[34:46]), exc_info=True)
+        self.hasPVTEC = True
+            
+    def populateHVTEC(self, vtec):
+        vtec = vtec.strip(' /')
+        self.location_id = vtec[0:5]
+        self.flood_severity =  VTEC.getFloodSeverity(vtec[6])
+        self.immediate_cause =  VTEC.getImmediateCause(vtec[8:10])
+        self.flood_begin = None
+        self.flood_crest = None
+        self.flood_end = None
+        
+        try:
+            if vtec[11:23] != '000000T0000Z':
+                self.flood_begin = datetime.strptime(vtec[11:23],"%y%m%dT%H%MZ").replace(tzinfo=dateutil.tz.gettz('UTC'))
+            else:
+                self.flood_begin = None
+        except:
+            Log.error("Invalid H-VTEC Crest Begin Time {0}".format(vtec[11:23]))
+        
+        try:
+            if vtec[24:36] != '000000T0000Z':
+                self.flood_crest = datetime.strptime(vtec[24:36],"%y%m%dT%H%MZ").replace(tzinfo=dateutil.tz.gettz('UTC'))   
+            else:
+                self.flood_crest = None
+        except:
+            Log.error("Invalid H-VTEC Flood Crest Time {0}".format(vtec[24:36]))
+
+        try:
+            if vtec[37:49] != '000000T0000Z':
+                self.flood_end = datetime.strptime(vtec[37:49],"%y%m%dT%H%MZ").replace(tzinfo=dateutil.tz.gettz('UTC'))
+            else:
+                self.flood_end = None
+        except:
+            Log.error("Invalid H-VTEC Flood End Time {0}".format(vtec[37:49]))
+            
+        self.flood_record_status = VTEC.getFloodRecordStatus(vtec[50:52])
+        self.hasHVTEC = True
+
+    def populateVTEC(self, vtec):
+        if vtec is not None:
+            for chunk in vtec.split('/'):
+                if len(chunk) is 46:
+                    self.populatePVTEC(chunk)
+                elif len(chunk) is 52:
+                    self.populateHVTEC(chunk)
+
 class UGC:
     FORMAT_FIPS = object()
     FORMAT_ZONE = object()

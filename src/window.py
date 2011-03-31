@@ -29,7 +29,6 @@ import datetime
 import dateutil
 import webkit
 
-
 Log = logging.getLogger()
 
 class KeyTable(gtk.Table):
@@ -75,6 +74,36 @@ class KeyTable(gtk.Table):
         self.remove(child)
         
 class Window:
+    __COLOR_BLACK = gtk.gdk.color_parse("black") 
+    __COLOR_GREEN = gtk.gdk.color_parse("ForestGreen") 
+    __COLOR_BLUE = gtk.gdk.color_parse("blue")
+    __COLOR_ORANGE = gtk.gdk.color_parse("orange")
+    __COLOR_GRAY = gtk.gdk.color_parse("gray")
+    __COLOR_RED = gtk.gdk.color_parse("red")
+
+    __COLOR_MAP = dict({
+                        cap.Alert.STATUS_ACTUAL: __COLOR_BLACK,
+                        cap.Alert.STATUS_DRAFT: __COLOR_GREEN,
+                        cap.Alert.STATUS_EXERCISE: __COLOR_BLUE,
+                        cap.Alert.STATUS_SYSTEM: __COLOR_ORANGE,
+                        cap.Alert.STATUS_TEST: __COLOR_BLACK,
+                        cap.Alert.MSGTYPE_ALERT: __COLOR_BLACK,
+                        cap.Alert.MSGTYPE_UPDATE: __COLOR_BLACK,
+                        cap.Alert.MSGTYPE_CANCEL: __COLOR_GRAY,
+                        cap.Alert.MSGTYPE_ERROR: __COLOR_RED,
+                        cap.Alert.MSGTYPE_ACK: __COLOR_BLACK,
+                        cap.Info.URGENCY_IMMEDIATE: __COLOR_RED,
+                        cap.Info.URGENCY_EXPECTED: __COLOR_ORANGE,
+                        cap.Info.URGENCY_FUTURE: __COLOR_BLACK,
+                        cap.Info.URGENCY_PAST: __COLOR_GREEN,
+                        cap.Info.URGENCY_UNKNOWN: __COLOR_GRAY,
+                        cap.Info.SEVERITY_EXTREME: __COLOR_RED,
+                        cap.Info.SEVERITY_SEVERE: __COLOR_ORANGE,
+                        cap.Info.SEVERITY_MODERATE: __COLOR_BLACK,
+                        cap.Info.SEVERITY_MINOR: __COLOR_GREEN,
+                        cap.Info.SEVERITY_UNKNOWN: __COLOR_GRAY,
+                        })
+    
     def __alert(self, tag, text, keyTooltip=None, valueTooltip=None, url=None):
         if text is not None:
             self.keyTable.add(tag + ':', text, keyTooltip, valueTooltip, url)
@@ -82,6 +111,73 @@ class Window:
     def __alerttz(self, tag, time, keyTooltip=None, valueTooltip=None, url=None):
         if time is not None and isinstance(time, datetime.datetime):
             self.keyTable.add(tag + ':', time.astimezone(dateutil.tz.tzlocal()).strftime("%A (%b %d), %I:%M:%S %p %Z"), keyTooltip, valueTooltip, url)
+
+    def status_data_func(self, celllayout, cell, model, iter, user_data=None):
+        status = model.get_value(iter, 1)
+        cell.set_property('text', str.format("{0}",status))
+        if status in Window.__COLOR_MAP:
+            cell.set_property('foreground', Window.__COLOR_MAP[status] )
+        else:
+            cell.set_property('foreground', Window.__COLOR_BLACK)
+
+    def msgType_data_func(self, celllayout, cell, model, iter, user_data=None):
+        msgType = model.get_value(iter, 2)
+        cell.set_property('text', str.format("{0}",msgType))
+        
+        if msgType in Window.__COLOR_MAP:
+            cell.set_property('foreground', Window.__COLOR_MAP[msgType] )
+        else:
+            cell.set_property('foreground', Window.__COLOR_BLACK )
+            
+    def urgency_data_func(self, celllayout, cell, model, iter, user_data=None):
+        urgency = model.get_value(iter, 3)
+        cell.set_property('text', str.format("{0}",urgency))
+        
+        if urgency in Window.__COLOR_MAP:
+            cell.set_property('foreground', Window.__COLOR_MAP[urgency] )
+        else: 
+            cell.set_property('foreground', Window.__COLOR_BLACK )
+
+    def severity_data_func(self, celllayout, cell, model, iter, user_data=None):
+        severity = model.get_value(iter, 4)
+        cell.set_property('text', str.format("{0}",severity))
+        if severity in Window.__COLOR_MAP:
+            cell.set_property('foreground', Window.__COLOR_MAP[severity] )
+        else:
+            cell.set_property('foreground', Window.__COLOR_BLACK )
+    
+    def __init_combobox(self, builder):
+        self.comboBoxListStore = builder.get_object("comboBoxListStore")
+        self.comboBox = builder.get_object("comboBox")
+        title_cr = gtk.CellRendererText()
+        status_cr = gtk.CellRendererText()
+        msgType_cr = gtk.CellRendererText()
+        urgency_cr = gtk.CellRendererText()
+        severity_cr = gtk.CellRendererText()
+        slash1_cr = gtk.CellRendererText()
+        slash2_cr = gtk.CellRendererText()
+        slash3_cr = gtk.CellRendererText()
+        self.comboBox.pack_start(title_cr, True)
+        self.comboBox.pack_start(status_cr, False)
+        self.comboBox.pack_start(slash1_cr, False)
+        self.comboBox.pack_start(msgType_cr, False)
+        self.comboBox.pack_start(slash2_cr, False)
+        self.comboBox.pack_start(urgency_cr, False)
+        self.comboBox.pack_start(slash3_cr, False)
+        self.comboBox.pack_start(severity_cr, False)
+        self.comboBox.add_attribute(title_cr, 'text', 0)
+        self.comboBox.add_attribute(status_cr, 'text', 1)
+        self.comboBox.add_attribute(msgType_cr, 'text', 2)
+        self.comboBox.add_attribute(urgency_cr, 'text', 3)
+        self.comboBox.add_attribute(severity_cr, 'text', 4)
+        self.comboBox.add_attribute(slash1_cr, 'text', 5)
+        self.comboBox.add_attribute(slash2_cr, 'text', 5)
+        self.comboBox.add_attribute(slash3_cr, 'text', 5)
+        self.comboBox.set_cell_data_func(status_cr, self.status_data_func)
+        self.comboBox.set_cell_data_func(msgType_cr, self.msgType_data_func)
+        self.comboBox.set_cell_data_func(urgency_cr, self.urgency_data_func)
+        self.comboBox.set_cell_data_func(severity_cr, self.severity_data_func)
+
 
     def __init__(self):
         self.alerts = dict()
@@ -92,7 +188,7 @@ class Window:
         builder.connect_signals(self)
         self.window = builder.get_object("mainWindow")
         
-        self.capTitleBuffer = builder.get_object("capTitleBuffer")
+        self.__init_combobox(builder)
 
         self.keyValueWindow = builder.get_object("keyValueScrolledWindow")
         self.viewport = gtk.Viewport()
@@ -103,10 +199,20 @@ class Window:
         self.notebook.show()
         self.window.show()
         
+
+        
+
     def changepage_cb(self, notebook, page, page_num, data=None):
         p = self.notebook.get_nth_page(page_num)
         return True
-        
+
+    def combobox_changed_cb(self, combobox):
+        pass
+        active = combobox.get_active()
+        if active >= 0:
+            self.populateCap(self.alerts[self.ids[active]])
+            self.index = active
+
     def on_mainWindow_destroy(self, widget, data=None):
         pass
 
@@ -115,9 +221,15 @@ class Window:
         if isinstance(alert, cap.Alert):
             self.alerts[alert.id] = alert
             self.ids.append(alert.id)
+            if len(alert.infos) > 0:
+                self.comboBoxListStore.append((alert.getTitle(), alert.status, alert.msgType, alert.infos[0].urgency, alert.infos[0].severity, '/'))
+            else:
+                self.comboBoxListStore.append((alert.getTitle(), alert.status, alert.msgType, cap.Info.URGENCY_UNKNOWN, cap.Info.SEVERITY_UNKNOWN))
             if self.index is -1:
                 self.populateCap(alert)
                 self.index = 0
+            self.comboBox.set_active(self.index)
+
         else:
             Log.error("Invalid class passed to acceptCap(): %s" % type(alert))
 
@@ -127,7 +239,9 @@ class Window:
                 self.index += 1
             else:
                 self.index = 0
+
             self.populateCap(self.alerts[self.ids[self.index]])
+            self.comboBox.set_active(self.index)
 
     def onPrevClick(self, e):
         if len(self.ids) is not 0:
@@ -136,70 +250,51 @@ class Window:
             else:
                 self.index = len(self.ids) - 1
             self.populateCap(self.alerts[self.ids[self.index]])
+            self.comboBox.set_active(self.index)
     
-    def populatePVTEC(self, vtec):
-        vtec = vtec.strip(' /')
-        
-        self.__alert('P-VTEC Class', cap.VTEC.getProductClass(vtec[0]))
-        self.__alert('P-VTEC Actions', cap.VTEC.getActions(vtec[2:5]))
-        self.__alert('P-VTEC Office ID', vtec[6:10])
-        self.__alert('P-VTEC Phenomena', cap.VTEC.getPhenomena(vtec[11:13]))
-        self.__alert('P-VTEC Significance', cap.VTEC.getSignificance(vtec[14:15]))
-        self.__alert('P-VTEC Event Tracking Number', vtec[16:20])
+    def __populatePVTEC(self, info):
+        if info.vtec is not None:
+            if info.vtec.hasPVTEC:
+                self.__alert('P-VTEC Class', info.vtec.product_class)
+                self.__alert('P-VTEC Actions', info.vtec.actions)
+                self.__alert('P-VTEC Office ID', info.vtec.office_id)
+                self.__alert('P-VTEC Phenomena', info.vtec.phenomena)
+                self.__alert('P-VTEC Significance', info.vtec.significance)
+                self.__alert('P-VTEC Event Tracking Number', info.vtec.event_tracking_number)
+                if info.vtec.begin is not None:
+                    self.__alerttz('P-VTEC Event Beginning', info.vtec.begin)
+                else:
+                    self.__alert('P-VTEC Event Beginning', 'Ongoing')
 
-        try:
-            if vtec[21:33] != '000000T0000Z':
-                beginning = datetime.datetime.strptime(vtec[21:33],"%y%m%dT%H%MZ").replace(tzinfo=dateutil.tz.gettz('UTC'))
-                self.__alerttz('P-VTEC Event Beginning', beginning)
-            else:
-                self.__alert('P-VTEC Event Beginning', 'Ongoing')
-        except:
-            Log.error("Invalid P-VTEC Event Beginning {0}".format(vtec[21:33]))
+                if info.vtec.end is not None:
+                    self.__alerttz('P-VTEC Event End', info.vtec.end)
+                else:
+                    self.__alert('P-VTEC Event End', 'Until Further Notice')
             
-        try:
-            if vtec[34:46] != '000000T0000Z':
-                end = datetime.datetime.strptime(vtec[34:46],"%y%m%dT%H%MZ").replace(tzinfo=dateutil.tz.gettz('UTC'))
-                self.__alerttz('P-VTEC Event End', end)
-            else:
-                self.__alert('P-VTEC Event End', 'Until Further Notice')
-        except:
-            Log.error("Invalid P-VTEC Event End {0}".format(vtec[34:46]))
-            
-    def populateHVTEC(self, vtec):
-        vtec = vtec.strip(' /')
-        self.__alert('H-VTEC NWS Location Id', vtec[0:5])
-        self.__alert('H-VTEC Flood Severity', cap.VTEC.getFloodSeverity(vtec[6]))
-        self.__alert('H-VTEC Immediate Cause', cap.VTEC.getImmediateCause(vtec[8:10]))
-        
-        try:
-            if vtec[11:23] != '000000T0000Z':
-                begin = datetime.datetime.strptime(vtec[11:23],"%y%m%dT%H%MZ").replace(tzinfo=dateutil.tz.gettz('UTC'))
-                self.__alerttz('H-VTEC Flood Begin Time', begin)
-            else:
-                self.__alerttz('H-VTEC Flood Begin Time', 'Ongoing')
-        except:
-            Log.error("Invalid H-VTEC Crest Begin Time {0}".format(vtec[11:23]))
-        
-        try:
-            if vtec[24:36] != '000000T0000Z':
-                crest = datetime.datetime.strptime(vtec[24:36],"%y%m%dT%H%MZ").replace(tzinfo=dateutil.tz.gettz('UTC'))   
-                self.__alerttz('H-VTEC Flood Crest Time', crest)
-        except:
-            Log.error("Invalid H-VTEC Flood Crest Time {0}".format(vtec[24:36]))
-        try:
-            if vtec[37:49] != '000000T0000Z':
-                end = datetime.datetime.strptime(vtec[37:49],"%y%m%dT%H%MZ").replace(tzinfo=dateutil.tz.gettz('UTC'))
-                self.__alerttz('H-VTEC Flood End Time', end)
-            else:
-                self.__alert('H-VTEC Flood End Time', 'Until Further Notice')
-        except:
-            Log.error("Invalid H-VTEC Flood End Time {0}".format(vtec[37:49]))
-            
-        self.__alert('H-VTEC Flood Record Status', cap.VTEC.getFloodRecordStatus(vtec[50:52]))
+    def __populateHVTEC(self, info):
+        if info.vtec is not None:
+            if info.vtec.hasHVTEC:
+                self.__alert('H-VTEC NWS Location Id', info.vtec.location_id)
+                self.__alert('H-VTEC Flood Severity', info.vtec.flood_severity)
+                self.__alert('H-VTEC Immediate Cause', info.vtec.immediate_cause)
+                
+                if info.vtec.flood_begin is not None:
+                    self.__alerttz('H-VTEC Flood Begin Time', info.vtec.flood_begin)
+                else:
+                    self.__alerttz('H-VTEC Flood Begin Time', 'Ongoing')
+
+                if info.vtec.flood_crest is not None:
+                    self.__alerttz('H-VTEC Flood Crest Time', info.vtec.flood_crest)
+
+                if info.vtec.flood_end is not None:
+                    self.__alerttz('H-VTEC Flood End Time', info.vtec.flood_end)
+                else:
+                    self.__alert('H-VTEC Flood End Time', 'Until Further Notice')
+                    
+                self.__alert('H-VTEC Flood Record Status', info.vtec.flood_record_status)
         
     def populateCap(self, alert):
         try:
-            self.capTitleBuffer.set_text(alert.id)
             self.keyTable.clear()
             while self.notebook.get_n_pages() > 0:
                 self.notebook.remove_page(-1)
@@ -225,7 +320,6 @@ class Window:
                     self.__alert('Category', c, cap.Info.aboutCategory(), cap.Info.aboutCategory(c))
                 if info.event is not None and info.event is not 'UNTITLED EVENT':
                     self.__alert('Event', info.event, cap.Info.aboutEvent())
-                    self.capTitleBuffer.set_text(info.event)
                 self.__alert('Urgency', info.urgency, cap.Info.aboutUrgency(), cap.Info.aboutUrgency(info.urgency))
                 self.__alert('Severity', info.severity, cap.Info.aboutSeverity(), cap.Info.aboutSeverity(info.severity))
                 self.__alert('Certainty', info.certainty, cap.Info.aboutCertainty(), cap.Info.aboutCertainty(info.certainty))
@@ -240,23 +334,11 @@ class Window:
                 self.__alerttz('Effective', info.effective, cap.Info.aboutEffective())
                 self.__alerttz('Onset', info.onset, cap.Info.aboutOnset())
                 self.__alerttz('Expires', info.expires, cap.Info.aboutExpires())
+                self.__populatePVTEC(info)
+                self.__populateHVTEC(info)
                 self.__alert('Web', info.web, cap.Info.aboutWeb(), url=info.web)
                 self.__alert('Contact', info.contact, cap.Info.aboutContact())
                 for p in info.parameters:
-                    if p == 'P-VTEC':
-                        self.populatePVTEC(info.parameters[p])
-                        continue
-                    if p == 'H-VTEC':
-                        self.populateHVTEC(info.parameters[p])
-                        continue
-                    if p == 'VTEC':
-                        for chunk in info.parameters[p].split('/'):
-                            if len(chunk) is 46:
-                                self.populatePVTEC(chunk)
-                            elif len(chunk) is 52:
-                                self.populateHVTEC(chunk)
-                        continue
-                    
                     self.__alert(p, info.parameters[p], cap.Info.aboutParameter())
                 
                 helper = str()
@@ -290,7 +372,7 @@ class Window:
             for code in alert.codes:
                 self.__alert('Code', code, cap.Alert.aboutCode())
             for reference in alert.references:
-                self.__alert(reference, cap.Alert.aboutReferences())
+                self.__alert('Reference', reference, cap.Alert.aboutReferences())
             self.__alert('Sender', alert.sender,cap.Alert.aboutSender())
             self.__alerttz('Sent', alert.sent,cap.Alert.aboutSent())
             self.__alert('Version', alert.version)

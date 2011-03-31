@@ -163,9 +163,11 @@ def ReadCAP(file):
 
     try:
         feed = urllib2.urlopen(file)
+    except ValueError:
+        Log.warning("Input '{0}' not a valid url type. Assuming it is a filename.".format(file))
+        feed = file
     except:
         Log.error("Unexpected error fetching CAP {0}".format(file), exc_info=True)
-        feed = file
 
     try:
         parser = objectify.makeparser()
@@ -247,15 +249,22 @@ def ReadCAP(file):
                 i.setContact(info.contract.text)
             if hasattr(info, 'parameter'):
                 for parameter in info.parameter:
-                    try:
-                        i.addParameter(parameter.valueName.text, parameter.value.text)
-                    except AttributeError:
+                    if hasattr(parameter, 'valueName'):
+                        if parameter.valueName.text is not None:
+                            if parameter.valueName.text.count('VTEC'):
+                                i.setVTEC(parameter.value.text)
+                            else:
+                                i.addParameter(parameter.valueName.text, parameter.value.text)
+                    else:
                         # is this a USGS feed?
                         if parameter.text.count('=') is 1:
                             valueName, value = parameter.text.split('=')
-                            i.addParameter(valueName, value)
+                            if valueName.count('VTEC'):
+                                i.setVTEC(value)
+                            else:   
+                                i.addParameter(valueName, value)
                         else:
-                            raise
+                            Log.error("Error parsing parameter {0}".format(parameter.text))
             if hasattr(info, 'resource'):
                 for resource in info.resource:
                     res = cap.Resource()

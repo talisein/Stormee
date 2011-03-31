@@ -91,13 +91,13 @@ class CAPTray:
         
         for newEntry in entries:
             self.seen.add(newEntry.caplink)
-            if newEntry.checkFips(FIPSCODE) or newEntry.checkCoords(LATLONG_COORDS):
+            if newEntry.checkFips(FIPSCODE) or newEntry.checkCoords(LATLONG_COORDS) or True:
                 Log.info("New alert from feed {0}: {1}".format(newEntry.fromFeed, newEntry.summary))
                 alert = parse.ReadCAP(newEntry.caplink)
                 if alert is None:
                     continue
                 
-                if alert.checkUGC(STATECODE, FIPSCODE, UGCCODE) or alert.checkCoords(LATLONG_COORDS) or alert.checkArea('FIPS6', '000000'):
+                if alert.checkUGC(STATECODE, FIPSCODE, UGCCODE) or alert.checkCoords(LATLONG_COORDS) or alert.checkArea('FIPS6', '000000') or True:
                     if not alert.isExpired():
                         self.caps[newEntry.caplink] = alert
                         if not isInitial:

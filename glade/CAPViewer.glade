@@ -169,15 +169,10 @@
               <object class="GtkHBox" id="titleHbox">
                 <property name="visible">True</property>
                 <child>
-                  <object class="GtkTextView" id="capTitleTextview">
+                  <object class="GtkComboBox" id="comboBox">
                     <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="pixels_above_lines">2</property>
-                    <property name="pixels_below_lines">2</property>
-                    <property name="editable">False</property>
-                    <property name="justification">center</property>
-                    <property name="cursor_visible">False</property>
-                    <property name="buffer">capTitleBuffer</property>
+                    <property name="model">comboBoxListStore</property>
+                    <signal name="changed" handler="combobox_changed_cb"/>
                   </object>
                   <packing>
                     <property name="position">0</property>
@@ -311,9 +306,6 @@
       <column type="gchararray"/>
     </columns>
   </object>
-  <object class="GtkTextBuffer" id="capTitleBuffer">
-    <property name="text" translatable="yes">Default CAP Title</property>
-  </object>
   <object class="GtkAccelGroup" id="accelgroup1"/>
   <object class="GtkMenu" id="menu2">
     <property name="visible">True</property>
@@ -369,4 +361,20 @@
     </child>
   </object>
   <object class="GtkTextBuffer" id="infoTextBuffer"/>
+  <object class="GtkListStore" id="comboBoxListStore">
+    <columns>
+      <!-- column-name title -->
+      <column type="gchararray"/>
+      <!-- column-name status -->
+      <column type="gchararray"/>
+      <!-- column-name msgType -->
+      <column type="gchararray"/>
+      <!-- column-name urgency -->
+      <column type="gchararray"/>
+      <!-- column-name severity -->
+      <column type="gchararray"/>
+      <!-- column-name slash -->
+      <column type="gchararray"/>
+    </columns>
+  </object>
 </interface>
