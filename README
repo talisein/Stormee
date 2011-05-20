@@ -21,5 +21,9 @@ the event includes the area the user is in a notification is displayed
 and, through the status tray, you can see all the details of the
 message. Right now you have to edit tray.py and change LATLONG_COORDS,
 FIPSCODE and UGCCODE to get the right filtering. Other than that the
-application is /basically/ functional, but ugly.
+application is pretty functional.
+
+To get it to run you have to execute it from the src directory,
+because I don't know how to make an installer or .desktop file or
+anything proper like that. 
 
