@@ -22,12 +22,14 @@ import gobject
 import gtk
 import pygtk
 pygtk.require("2.0")
+import heapq
 
 import pynotify
 import logging
 import parse
 import cap
 from window import Window
+
 
 Log = logging.getLogger()
 
@@ -40,14 +42,15 @@ UGCCODE = '017'
 class CAPTray:
 
     def __init__(self):
-        self.caps = dict()
+        self.caps = []
         self.rssfeeds = set()
         self.seen = set()
 
 #        self.rssfeeds.add('http://www.usgs.gov/hazard_alert/alerts/landslides.rss')
-        self.rssfeeds.add('http://alerts.weather.gov/cap/ca.php?x=0')
+
+#        self.rssfeeds.add('http://alerts.weather.gov/cap/ca.php?x=0')
         self.rssfeeds.add('http://edis.oes.ca.gov/index.atom')
-        self.rssfeeds.add('http://earthquake.usgs.gov/eqcenter/recenteqsww/catalogs/caprss7days5.xml')
+#        self.rssfeeds.add('http://earthquake.usgs.gov/eqcenter/recenteqsww/catalogs/caprss7days5.xml')
         self.mycoords = LATLONG_COORDS
         
         self.statusIcon = gtk.StatusIcon()
@@ -73,8 +76,10 @@ class CAPTray:
     
     def execute_cb(self, widget, event, data=None):
         window = Window()
-        for cap in self.caps:
-            window.acceptCap(self.caps[cap])
+        
+        localcaps = list(self.caps)
+        for i in range(len(localcaps)):
+            window.acceptCap(heapq.heappop(localcaps))
     
     def quit_cb(self, widget, data=None):
         gtk.main_quit()
@@ -99,16 +104,16 @@ class CAPTray:
                 
                 if alert.checkUGC(STATECODE, FIPSCODE, UGCCODE) or alert.checkCoords(LATLONG_COORDS) or alert.checkArea('FIPS6', '000000') or True:
                     if not alert.isExpired():
-                        self.caps[newEntry.caplink] = alert
+                        heapq.heappush(self.caps,alert)
                         if not isInitial:
                             if len(alert.infos) is 0:
                                 Log.debug("Alert %s had no info." % alert.id)
                                 continue
                             if alert.infos[0].description is None:
                                 alert.infos[0].description = "NO DESCRIPTION"
-                            if alert.infos[0].event is None:
-                                alert.infos[0].event = "UNTITLED EVENT"
-                            n = pynotify.Notification(alert.infos[0].event, "<a href='{0}'>Link</a>\n{1}".format(newEntry.caplink, alert.infos[0].description[0:120]))
+                            if not pynotify.is_initted():
+                                pynotify.init("GNOME Common Alerting Protocol Viewer")
+                            n = pynotify.Notification(alert.getTitle(), "<a href='{0}'>Link</a>\n{1}".format(alert.url, alert.infos[0].description[0:120]))
                             n.set_urgency(pynotify.URGENCY_NORMAL)
                             n.set_category("device")
                         
@@ -131,17 +136,16 @@ class CAPTray:
         self.ejectExpired()
 #        self.caps['Testing 1'] = parse.ReadCAP('../alert.cap')
 #        self.caps['Testing 2'] = parse.ReadCAP('../alert2.cap')
-#        self.caps['Testing 3'] = parse.ReadCAP('../alert3.cap')        
+#        self.caps['Testing 3'] = parse.ReadCAP('../alert3.cap')
+#        self.caps['Testing 4'] = parse.ReadCAP('../alert4.cap')
         return True
     
     def ejectExpired(self):
-        keys = list()
         for cap in self.caps:
-            if self.caps[cap].isExpired():
+            if cap.isExpired():
                 Log.info("CAP {0} has expired.".format(cap))
-                keys.append(cap)
-        for key in keys:
-            del self.caps[key]
+                self.caps.remove(cap)
+        heapq.heapify(self.caps)
 
     def popup_menu_cb(self, widget, button, time, data=None):
         if button == 3:

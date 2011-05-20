@@ -22,6 +22,7 @@ import gtk
 import pygtk
 pygtk.require("2.0")
 
+import heapq
 import cap
 import utils
 import logging
@@ -41,6 +42,9 @@ class KeyTable(gtk.Table):
     def add(self, key, value, keyTooltip=None, valueTooltip=None, url=None):
         keyTag = gtk.Label()
         valueTag = gtk.Label()
+        spaceTag = gtk.Label()
+        hbox = gtk.HBox()
+        
         keyTag.set_alignment(1.0, 0.5)
 
         if url is not None:
@@ -55,6 +59,8 @@ class KeyTable(gtk.Table):
         valueTag.set_alignment(0.0, 0.5)
         keyTag.set_single_line_mode(True)
         keyTag.set_text(key)
+        
+        spaceTag.set_single_line_mode(True)
         valueTag.set_sensitive(True)
         if keyTooltip is not None:
             keyTag.set_tooltip_text(keyTooltip)
@@ -62,8 +68,10 @@ class KeyTable(gtk.Table):
             valueTag.set_tooltip_text(valueTooltip)
         self.rows += 1
         self.resize(self.rows, self.columns)
+        hbox.pack_start(valueTag, False, True)
+ #       hbox.pack_start(spaceTag, True, True)
         self.attach(keyTag, 0, 1, self.rows - 1, self.rows, xoptions=gtk.FILL, yoptions=gtk.FILL, xpadding=3)
-        self.attach(valueTag, 1, 2, self.rows -1, self.rows, xpadding=5)
+        self.attach(hbox, 1, 2, self.rows -1, self.rows, xoptions=gtk.EXPAND|gtk.FILL, xpadding=5)
         self.show_all()
 
     def clear(self):
@@ -178,10 +186,112 @@ class Window:
         self.comboBox.set_cell_data_func(urgency_cr, self.urgency_data_func)
         self.comboBox.set_cell_data_func(severity_cr, self.severity_data_func)
 
+    def alert_titleData(self, column, cell, model, iter, user_data=None):
+        alert = model.get_value(iter, 0)
+        if alert is not None:
+            title = alert.getTitle().strip()
+            cell.set_property('text', str.format("{0}", title))
+
+
+    def alert_statusData(self, column, cell, model, iter, user_data=None):
+        alert = model.get_value(iter, 0)
+        if alert is not None:
+            status = alert.status
+            cell.set_property('text', str.format("{0}",alert.status))
+            if status in Window.__COLOR_MAP:
+                cell.set_property('foreground', Window.__COLOR_MAP[status] )
+            else:
+                cell.set_property('foreground', Window.__COLOR_BLACK)
+
+    def alert_msgTypeData(self, column, cell, model, iter, user_data=None):
+        alert = model.get_value(iter, 0)
+        if alert is not None:
+            msgType = alert.msgType
+            cell.set_property('text', str.format("{0}",alert.msgType))
+            if msgType in Window.__COLOR_MAP:
+                cell.set_property('foreground', Window.__COLOR_MAP[msgType] )
+            else:
+                cell.set_property('foreground', Window.__COLOR_BLACK)
+
+    def alert_urgencyData(self, column, cell, model, iter, user_data=None):
+        alert = model.get_value(iter, 0)
+        if alert is not None:
+    
+            if len(alert.infos) > 0:
+                urgency = alert.infos[0].urgency
+            else:
+                urgency = cap.Info.URGENCY_UNKNOWN
+            cell.set_property('text', str.format("{0}",urgency))
+    
+            if urgency in Window.__COLOR_MAP:
+                cell.set_property('foreground', Window.__COLOR_MAP[urgency] )
+            else:
+                cell.set_property('foreground', Window.__COLOR_BLACK)
+            
+    def alert_severityData(self, column, cell, model, iter, user_data=None):
+        alert = model.get_value(iter, 0)
+        if alert is not None:
+            if len(alert.infos) > 0:
+                severity = alert.infos[0].severity
+            else:
+                severity = cap.Info.SEVERITY_UNKNOWN
+            cell.set_property('text', str.format("{0}",severity))
+    
+            if severity in Window.__COLOR_MAP:
+                cell.set_property('foreground', Window.__COLOR_MAP[severity] )
+            else:
+                cell.set_property('foreground', Window.__COLOR_BLACK)
+
+    def alert_slashData(self, column, cell, model, iter, user_data=None):
+        cell.set_property('text', '/')
+        
+    def alert_treeSort(self, treemodel, iter1, iter2, user_data=None):
+        a1 = treemodel.get_value(iter1, 0).getTitle()
+        a2 = treemodel.get_value(iter2, 0).getTitle()
+        ret = 0
+        if a1 < a2:
+            ret = -1
+        if a1 > a2:
+            ret = 1
+        return ret
+
+    def __init_combobox2(self, builder):
+        self.comboBox2 = builder.get_object("comboBox2")
+        self.treeStore = gtk.TreeStore(object)
+        self.comboBox2.set_model(self.treeStore)
+        title_cr = gtk.CellRendererText()
+        status_cr = gtk.CellRendererText()
+        msgType_cr = gtk.CellRendererText()
+        urgency_cr = gtk.CellRendererText()
+        severity_cr = gtk.CellRendererText()
+        slash1_cr = gtk.CellRendererText()
+        slash2_cr = gtk.CellRendererText()
+        slash3_cr = gtk.CellRendererText()
+        self.comboBox2.pack_start(title_cr, True)
+        self.comboBox2.pack_start(status_cr, False)
+        self.comboBox2.pack_start(slash1_cr, False)
+        self.comboBox2.pack_start(msgType_cr, False)
+        self.comboBox2.pack_start(slash2_cr, False)
+        self.comboBox2.pack_start(urgency_cr, False)
+        self.comboBox2.pack_start(slash3_cr, False)
+        self.comboBox2.pack_start(severity_cr, False)
+        self.comboBox2.set_cell_data_func(title_cr, self.alert_titleData)
+        self.comboBox2.set_cell_data_func(status_cr, self.alert_statusData)
+        self.comboBox2.set_cell_data_func(msgType_cr, self.alert_msgTypeData)
+        self.comboBox2.set_cell_data_func(urgency_cr, self.alert_urgencyData)
+        self.comboBox2.set_cell_data_func(severity_cr, self.alert_severityData)
+        self.comboBox2.set_cell_data_func(slash1_cr, self.alert_slashData)
+        self.comboBox2.set_cell_data_func(slash2_cr, self.alert_slashData)
+        self.comboBox2.set_cell_data_func(slash3_cr, self.alert_slashData)
+        self.treeStore.set_default_sort_func(self.alert_treeSort)
+        self.treeStore.set_sort_column_id(-1, gtk.SORT_ASCENDING)
 
     def __init__(self):
         self.alerts = dict()
         self.ids = list()
+        self.parents = set()
+        self.parentiters = dict()
+        
         self.index = -1
         builder = gtk.Builder()
         builder.add_from_file('../glade/CAPViewer.glade')
@@ -189,16 +299,14 @@ class Window:
         self.window = builder.get_object("mainWindow")
         
         self.__init_combobox(builder)
-
+        self.__init_combobox2(builder)
         self.keyValueWindow = builder.get_object("keyValueScrolledWindow")
         self.viewport = gtk.Viewport()
         self.keyTable = KeyTable() 
         self.keyValueWindow.add_with_viewport(self.keyTable)
        
         self.notebook = builder.get_object("notebook")
-        self.notebook.show()
-        self.window.show()
-        
+        self.window.show_all()
 
         
 
@@ -207,15 +315,18 @@ class Window:
         return True
 
     def combobox_changed_cb(self, combobox):
-        pass
         active = combobox.get_active()
         if active >= 0:
             self.populateCap(self.alerts[self.ids[active]])
             self.index = active
 
+    def comboBox2_changed_cb(self, combobox):
+        active = combobox.get_active_iter()
+        alert = self.treeStore.get_value(active, 0)
+        self.populateCap(alert)
+
     def on_mainWindow_destroy(self, widget, data=None):
         pass
-
 
     def acceptCap(self, alert):
         if isinstance(alert, cap.Alert):
@@ -225,41 +336,45 @@ class Window:
                 self.comboBoxListStore.append((alert.getTitle(), alert.status, alert.msgType, alert.infos[0].urgency, alert.infos[0].severity, '/'))
             else:
                 self.comboBoxListStore.append((alert.getTitle(), alert.status, alert.msgType, cap.Info.URGENCY_UNKNOWN, cap.Info.SEVERITY_UNKNOWN))
-            if self.index is -1:
-                self.populateCap(alert)
-                self.index = 0
-            self.comboBox.set_active(self.index)
+
+            p = filter(alert.match, self.parents)
+            if len(p) is 0:
+                iter = self.treeStore.append(None, [alert])
+                self.parents.add(alert)
+                self.parentiters[alert] = iter
+            else:
+                if len(p) is 1:
+                    self.treeStore.append(self.parentiters[p[0]], [alert])
+                else:
+                    Log.debug("Multiple parents for an alert!")
+            if self.comboBox2.get_active() is -1:
+                self.comboBox2.set_active(0)
+                self.comboBox2_changed_cb(self.comboBox2)
 
         else:
             Log.error("Invalid class passed to acceptCap(): %s" % type(alert))
 
     def onNextClick(self, e):
-        if len(self.ids) is not 0:
-            if (self.index+1) < len(self.ids):
-                self.index += 1
-            else:
-                self.index = 0
-
-            self.populateCap(self.alerts[self.ids[self.index]])
-            self.comboBox.set_active(self.index)
+        active = self.comboBox2.get_active_iter()
+        next = self.treeStore.iter_next(active)
+        if next is not None:
+            alert = self.treeStore.get_value(next, 0)
+            self.populateCap(alert)
+            self.comboBox2.set_active_iter(next)
 
     def onPrevClick(self, e):
-        if len(self.ids) is not 0:
-            if self.index is not 0:
-                self.index -= 1
-            else:
-                self.index = len(self.ids) - 1
-            self.populateCap(self.alerts[self.ids[self.index]])
-            self.comboBox.set_active(self.index)
+        active = self.comboBox2.get_active()
+        if (active - 1) >= 0:
+            self.comboBox2.set_active(active - 1)
+            self.populateCap(self.treeStore.get_value(self.comboBox2.get_active_iter(), 0))
     
     def __populatePVTEC(self, info):
         if info.vtec is not None:
             if info.vtec.hasPVTEC:
+                self.__alert('P-VTEC', str.format("{0} {1}", info.vtec.phenomena, info.vtec.significance))
                 self.__alert('P-VTEC Class', info.vtec.product_class)
                 self.__alert('P-VTEC Actions', info.vtec.actions)
-                self.__alert('P-VTEC Office ID', info.vtec.office_id)
-                self.__alert('P-VTEC Phenomena', info.vtec.phenomena)
-                self.__alert('P-VTEC Significance', info.vtec.significance)
+                self.__alert('P-VTEC Office ID', info.vtec.office_id, url=str.format('http://www.wrh.noaa.gov/{0}/',info.vtec.office_id[len(info.vtec.office_id)-3:len(info.vtec.office_id)].lower()))
                 self.__alert('P-VTEC Event Tracking Number', info.vtec.event_tracking_number)
                 if info.vtec.begin is not None:
                     self.__alerttz('P-VTEC Event Beginning', info.vtec.begin)
@@ -274,9 +389,13 @@ class Window:
     def __populateHVTEC(self, info):
         if info.vtec is not None:
             if info.vtec.hasHVTEC:
-                self.__alert('H-VTEC NWS Location Id', info.vtec.location_id)
+                if info.vtec.hasPVTEC:
+                    self.__alert('H-VTEC Location ID', info.vtec.location_id, url=str.format('http://water.weather.gov/ahps2/hydrograph.php?wfo={0}&gage={1}',info.vtec.office_id[len(info.vtec.office_id)-3:len(info.vtec.office_id)],info.vtec.location_id))
+                else:
+                    self.__alert('H-VTEC Location ID', info.vtec.location_id)
                 self.__alert('H-VTEC Flood Severity', info.vtec.flood_severity)
                 self.__alert('H-VTEC Immediate Cause', info.vtec.immediate_cause)
+                self.__alert('H-VTEC Flood Record Status', info.vtec.flood_record_status)
                 
                 if info.vtec.flood_begin is not None:
                     self.__alerttz('H-VTEC Flood Begin Time', info.vtec.flood_begin)
@@ -291,7 +410,6 @@ class Window:
                 else:
                     self.__alert('H-VTEC Flood End Time', 'Until Further Notice')
                     
-                self.__alert('H-VTEC Flood Record Status', info.vtec.flood_record_status)
         
     def populateCap(self, alert):
         try:
@@ -353,7 +471,7 @@ class Window:
                 self.__alert('Language', info.language, cap.Info.aboutLanguage())
 
                 tb.set_text(helper)
-                file = open('../marker-simple.html')
+                #file = open('../marker-simple.html')
                 
 #                self.webview.load_html_string(file.read(),'http://localhost/testing')
                 for area in info.areas:
@@ -362,7 +480,10 @@ class Window:
                         label = gtk.Label('Map')
                         pn = self.notebook.append_page(webview, label)
                         webview.show()
-                        webview.load_html_string(utils.mapPolygon(polygon),'http://localhost/testing')
+                        if hasattr(area,'areaDesc'):
+                            webview.load_html_string(utils.mapPolygon(polygon, areaDesc=area.areaDesc),'http://localhost/testing')
+                        else:
+                            webview.load_html_string(utils.mapPolygon(polygon),'http://localhost/testing')
                     for circle in area.circles:
                         webview = webkit.WebView()
                         label = gtk.Label('Map')
@@ -377,6 +498,7 @@ class Window:
             self.__alerttz('Sent', alert.sent,cap.Alert.aboutSent())
             self.__alert('Version', alert.version)
             self.__alert('Message ID', alert.id, cap.Alert.aboutId())
+            self.__alert('Source CAP URL', alert.url, url=alert.url)
                         
         except AttributeError:
             Log.error("Attribute error while populating window from CAP {0}.".format(alert.id), exc_info=True)

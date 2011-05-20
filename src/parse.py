@@ -25,7 +25,7 @@ from lxml import objectify
 import logging 
 import utils
 import cap
-
+from lxml import etree
 
 MAX_ALERT_DISTANCE = 1000 # km.
 Log = logging.getLogger()
@@ -163,17 +163,22 @@ def ReadCAP(file):
 
     try:
         feed = urllib2.urlopen(file)
+        alert.url = feed.geturl()
     except ValueError:
         Log.warning("Input '{0}' not a valid url type. Assuming it is a filename.".format(file))
         feed = file
+        alert.url = None
+        
     except:
-        Log.error("Unexpected error fetching CAP {0}".format(file), exc_info=True)
+        Log.error("Unexpected error fetching CAP {0}".format(file), exc_info=False)
+        return None
 
+    
     try:
         parser = objectify.makeparser()
         tree = objectify.parse(feed, parser)
-    except:
-        Log.error("Unexpected error parsing CAP {0}".format(file), exc_info=True)
+    except etree.XMLSyntaxError:
+        Log.error("Syntax error parsing CAP {0} Discarding...".format(file), exc_info=False)
         return None
     
     try:
@@ -283,7 +288,15 @@ def ReadCAP(file):
             if hasattr(info, 'area'):
                 for area in info.area:
                     a = cap.Area()
-                    a.setAreaDesc(area.areaDesc.text)
+                    vtec = cap.VTEC()
+                    if not vtec.populateVTEC(area.areaDesc.text):
+                        a.setAreaDesc(area.areaDesc.text)
+                    else:
+                        if i.vtec is None:
+                            i.vtec = vtec
+                        else:
+                            if vtec.hasHVTEC and not i.vtec.hasHVTEC:
+                                i.vtec.combine(vtec)
                     if hasattr(area, 'polygon'):
                         for polygon in area.polygon:
                             a.addPolygon(polygon.text)
@@ -296,7 +309,7 @@ def ReadCAP(file):
                     if hasattr(area, 'altitude'):
                         a.setAltitude(area.altitude.text)
                     if hasattr(area, 'ceiling'):
-                        a.setCeiling(area.ceiling.text)    
+                        a.setCeiling(area.ceiling.text)
                     i.addArea(a)
             alert.addInfo(i)
         return alert

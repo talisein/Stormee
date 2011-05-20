@@ -4,9 +4,12 @@
 <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
 <meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
 <title>CAP Alert</title>
-<link href="http://code.google.com/apis/maps/documentation/javascript/examples/default.css" rel="stylesheet" type="text/css" />
-<script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=false"></script>
+<link href="https://code.google.com/apis/maps/documentation/javascript/examples/default.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="https://maps.google.com/maps/api/js?sensor=false"></script>
 <script type="text/javascript">
+
+var map;
+var infowindow;
 
   function initialize() {
 	var myLatLng = new google.maps.LatLng(ORIGIN);
@@ -18,13 +21,14 @@
     
     var cityCircle;
 
-    var map = new google.maps.Map(document.getElementById("map_canvas"),
+    map = new google.maps.Map(document.getElementById("map_canvas"),
         myOptions);
+    infowindow = new google.maps.InfoWindow();
 
     var marker = new google.maps.Marker({
         position: myLatLng, 
         map: map,
-        title:"Hello World!"
+        title:"MARKER_TITLE"
     });   
     
 
@@ -41,7 +45,17 @@
     });
     
     cityCircle.setMap(map);
+	google.maps.event.addListener(cityCircle, 'click', showArrays);
+    
   }
+
+	function showArrays(event) {
+		var contentString = "<b>Area Description:</b><br />INFOWINDOW_CONTENT";
+		infowindow.setContent(contentString);
+		infowindow.setPosition(event.latLng);
+		infowindow.open(map);
+	}
+  
 </script>
 </head>
 <body onload="initialize()">

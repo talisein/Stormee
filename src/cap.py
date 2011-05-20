@@ -24,6 +24,7 @@ from dateutil import parser as dateparser
 import dateutil
 import logging 
 import base64
+import re
 import utils
 from dateutil import zoneinfo
 
@@ -73,7 +74,7 @@ class Alert:
         
     def getTitle(self):
         for info in self.infos:
-            if info.vtec is not None:
+            if info.vtec is not None and info.vtec.hasPVTEC:
                 return str.format("{0} {1}", info.vtec.phenomena, info.vtec.significance)
             elif 'SAME' in info.eventCodes:
                 return NWIS.expandNWIS(info.eventCodes['SAME'])
@@ -84,6 +85,31 @@ class Alert:
             else:
                 return self.id
 
+    def __cmp__(self, other):
+        if other.sent > self.sent:
+            return -1
+        elif other.sent < self.sent:
+            return 1
+        else:
+            return 0
+            
+        
+    def __hash__(self):
+        if self.id is not None:
+            return self.id.__hash__() ^ self.sent.__hash__()
+        else:
+            Log.debug("Hash got called on an alert without id...")
+            return self.codes.__hash__()
+
+    def match(self, alert):
+        if self.incidents is not None and alert.incidents is not None and self.incidents == alert.incidents:
+            return True
+        for info in self.infos:
+            for ainfo in alert.infos:
+                if info.vtec is not None and ainfo.vtec is not None:
+                    if info.vtec.match(ainfo.vtec):
+                        return True
+        return False
 
     def checkArea(self, type, code):
         for info in self.infos:
@@ -790,6 +816,7 @@ class Area:
         self.polygons = list()
         self.circles = list()
         self.geoCodes = dict()
+        self.areaDesc = None
         
     def setAreaDesc(self, areaDesc):
         self.areaDesc = areaDesc
@@ -802,8 +829,14 @@ class Area:
         if polygon is not None:
             p = list()
             for x in polygon.split(' '):
-                (lat,long) = x.split(',')
-                p.append((float(lat),float(long)))
+                count = x.count(',')
+                if count is 1:
+                    (lat,longitude) = x.split(',')
+                    p.append((float(lat),float(longitude)))
+                elif count is 0:
+                    pass
+                else:
+                    Log.warning("Found too many commas in coordinates for polygon '{0}' at {1}".format(polygon, x))
             self.polygons.append(p)
              
     @staticmethod
@@ -813,8 +846,8 @@ class Area:
     def addCircle(self, circle):
         if circle is not None:
             (coords,radius) = circle.split(' ')
-            (lat,long) = coords.split(',')
-            self.circles.append((float(lat),float(long), float(radius)))
+            (lat,longitude) = coords.split(',')
+            self.circles.append((float(lat),float(longitude), float(radius)))
 
     @staticmethod
     def aboutCircle():
@@ -1155,32 +1188,38 @@ class VTEC:
         self.hasHVTEC = False
         self.populateVTEC(vtec)
         
+    def match(self, vtec):
+        if vtec is not None:
+            if self.hasPVTEC and vtec.hasPVTEC:
+                return self.office_id == vtec.office_id and self.phenomena == vtec.phenomena and self.significance == vtec.significance and self.event_tracking_number == vtec.event_tracking_number
+            elif self.hasHVTEC and vtec.hasHVTEC:
+                pass # TODO
+                Log.debug("Comparing VTECs that don't have PVTEC but do have HVTEC!")
+            else:
+                return False
+        return False
+    
     def populatePVTEC(self, vtec):
         vtec = vtec.strip(' /')
-        self.product_class = VTEC.getProductClass(vtec[0])
-        self.actions = VTEC.getActions(vtec[2:5])
-        self.office_id = vtec[6:10]
-        self.phenomena = VTEC.getPhenomena(vtec[11:13])
-        self.significance = VTEC.getSignificance(vtec[14:15])
-        self.event_tracking_number = vtec[16:20]
+        pclass, actions, self.office_id, phenomena, significance, self.event_tracking_number, begin, end = re.split('[.-]',vtec)
+        self.product_class = VTEC.getProductClass(pclass)
+        self.actions = VTEC.getActions(actions)
+        self.phenomena = VTEC.getPhenomena(phenomena)
+        self.significance = VTEC.getSignificance(significance)
         self.begin = None
         self.end = None
         
         try:
-            if vtec[21:33] != '000000T0000Z':
-                self.begin = datetime.strptime(vtec[21:33],"%y%m%dT%H%MZ").replace(tzinfo=dateutil.tz.gettz('UTC'))
-            else:
-                self.begin = None
+            if begin != '000000T0000Z':
+                self.begin = datetime.strptime(begin,"%y%m%dT%H%MZ").replace(tzinfo=dateutil.tz.gettz('UTC'))
         except:
-            Log.error("Invalid P-VTEC Event Beginning {0}".format(vtec[21:33]), exc_info=True)
+            Log.error("Invalid P-VTEC Event Beginning {0}".format(begin))
             
         try:
-            if vtec[34:46] != '000000T0000Z':
-                self.end = datetime.strptime(vtec[34:46],"%y%m%dT%H%MZ").replace(tzinfo=dateutil.tz.gettz('UTC'))
-            else:
-                self.end = None
+            if end != '000000T0000Z':
+                self.end = datetime.strptime(end,"%y%m%dT%H%MZ").replace(tzinfo=dateutil.tz.gettz('UTC'))
         except:
-            Log.error("Invalid P-VTEC Event End {0}".format(vtec[34:46]), exc_info=True)
+            Log.error("Invalid P-VTEC Event End {0}".format(end))
         self.hasPVTEC = True
             
     def populateHVTEC(self, vtec):
@@ -1226,6 +1265,28 @@ class VTEC:
                     self.populatePVTEC(chunk)
                 elif len(chunk) is 52:
                     self.populateHVTEC(chunk)
+        return self.hasHVTEC or self.hasPVTEC
+    
+    def combine(self, vtec):
+        if not self.hasHVTEC and vtec.hasHVTEC:
+            self.location_id = vtec.location_id
+            self.flood_severity =  vtec.flood_severity
+            self.immediate_cause =  vtec.immediate_cause
+            self.flood_begin = vtec.flood_begin
+            self.flood_crest = vtec.flood_crest
+            self.flood_end = vtec.flood_end
+            self.flood_record_status = vtec.flood_record_status
+            self.hasHVTEC = True
+        if not self.hasPVTEC and vtec.hasPVTEC:
+            self.product_class = vtec.product_class
+            self.actions = vtec.actions
+            self.phenomena = vtec.phenomena
+            self.significance = vtec.significance
+            self.begin = vtec.begin
+            self.end = vtec.end
+            self.hasPVTEC = True
+            self.office_id = vtec.office_id
+            self.event_tracking_number = vtec.event_tracking_number
 
 class UGC:
     FORMAT_FIPS = object()
@@ -1311,7 +1372,7 @@ class UGC:
                     else:
                         continue
                 elif len(segment) is 6:
-                    Log.debug('Found UGC datetime {0} in UGC {1}'.format(segment, ugc))
+                    #Log.debug('Found UGC datetime {0} in UGC {1}'.format(segment, ugc))
                     continue
                 else:
                     if len(segment) > 0:
@@ -1319,5 +1380,145 @@ class UGC:
                     continue
         return False
                         
-# TODO: UGC codes
-# http://www.weather.gov/directives/sym/pd01017002curr.pdf
+class WFO:
+    WEBSITES = dict({
+                     # Western Region
+                     #   Arizona
+                     'FGZ': 'http://www.wrh.noaa.gov/fgz/',
+                     'PSR': 'http://www.wrh.noaa.gov/psr/',
+                     'TWC': 'http://www.wrh.noaa.gov/twc/',
+                     #   California
+                     'EKA': 'http://www.wrh.noaa.gov/eka/',
+                     'LOX': 'http://www.wrh.noaa.gov/lox/',
+                     'STO': 'http://www.wrh.noaa.gov/sto/',
+                     'SGX': 'http://www.wrh.noaa.gov/sgx/',
+                     'MTR': 'http://www.wrh.noaa.gov/mtr/',
+                     'HNX': 'http://www.wrh.noaa.gov/hnx/',
+                     #   Idaho
+                     'BOI': 'http://www.wrh.noaa.gov/boi/',
+                     'PIH': 'http://www.wrh.noaa.gov//',
+                     #   Montana
+                     'BYZ': 'http://www.wrh.noaa.gov/byz/',
+                     'GGW': 'http://www.wrh.noaa.gov/ggw/',
+                     'TFX': 'http://www.wrh.noaa.gov/tfx/',
+                     'MSO': 'http://www.wrh.noaa.gov/mso/',
+                     #   Nevada
+                     'LKN': 'http://www.wrh.noaa.gov/lkn/',
+                     'VEF': 'http://www.wrh.noaa.gov/vef/',
+                     'REV': 'http://www.wrh.noaa.gov/rev/',
+                     #   Oregon
+                     'MFR': 'http://www.wrh.noaa.gov/mfr/',
+                     'PDT': 'http://www.wrh.noaa.gov/pdt/',
+                     'PQR': 'http://www.wrh.noaa.gov/pqr/',
+                     #   Utah
+                     'SLC': 'http://www.wrh.noaa.gov/slc/',
+                     #   Washington
+                     'SEW': 'http://www.wrh.noaa.gov/sew/',
+                     'OTX': 'http://www.wrh.noaa.gov/otx/',
+                     # Southern Region
+                     #==========================================================
+                     # 'BMX'
+                     # 'HUN'
+                     # 'MOB'
+                     # 'LZK'
+                     # 'JAX'
+                     # 'KEY'
+                     # 'MLB'
+                     # 'MFL'
+                     # 'TLH'
+                     # 'TBW'
+                     # 'FFC'
+                     # 'LCH'
+                     # 'LIX'
+                     # 'SHV'
+                     # 'JAN'
+                     # 'ABQ'
+                     # 'OUN'
+                     # 'TSA'
+                     # 'SJU'
+                     # 'MEG'
+                     # 'MRX'
+                     # 'BNA'
+                     # 'AMA'
+                     # 'EWX'
+                     # 'BRO'
+                     # 'CRP'
+                     # 'FWD'
+                     # 'ELP'
+                     # 'HGX'
+                     # 'LUB'
+                     # 'MAF'
+                     # 'SJT'
+                     # # Pacific Region
+                     # 'STU'
+                     # 'GUM'
+                     # 'HNL'
+                     # # Eastern Region
+                     # 'CAR'
+                     # 'GYX'
+                     # 'LWX'
+                     # 'BOX'
+                     # 'PHI'
+                     # 'ALY'
+                     # 'BGM'
+                     # 'BUF'
+                     # 'OKX'
+                     # 'MHX'
+                     # 'RAH'
+                     # 'ILM'
+                     # 'CLE'
+                     # 'ILN'
+                     # 'PIT'
+                     # 'CTP'
+                     # 'CHS'
+                     # 'CAE'
+                     # 'GSP'
+                     # 'BVT'
+                     # 'RNK'
+                     # 'AKQ'
+                     # 'RLX'
+                     # # Alaskan Region
+                     # 'AFC'
+                     # 'AFG'
+                     # 'AJK'
+                     # # Central Region
+                     # 'DEN'
+                     # 'GJT'
+                     # 'PUB'
+                     # 'LOT'
+                     # 'ILX'
+                     # 'IND'
+                     # 'IWX'
+                     # 'DVN'
+                     # 'DMX'
+                     # 'DDC'
+                     # 'GLD'
+                     # 'TOP'
+                     # 'ICT'
+                     # 'JKL'
+                     # 'LMK'
+                     # 'PAH'
+                     # 'DTX'
+                     # 'APX'
+                     # 'GRR'
+                     # 'MQT'
+                     # 'DLH'
+                     # 'MPX'
+                     # 'EAX'
+                     # 'SGF'
+                     # 'LSX'
+                     # 'GID'
+                     # 'LBF'
+                     # 'OAX'
+                     # 'BIS'
+                     # 'FGF'
+                     # 'ABR'
+                     # 'UNR'
+                     # 'FSD'
+                     # 'GRB'
+                     # 'ARX'
+                     # 'MKX'
+                     # 'CYS'
+                     # 'RIW'
+                     #==========================================================
+                     })

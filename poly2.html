@@ -10,8 +10,18 @@
       fillOpacity: 0.35
     });
 
-   bermudaTriangle.setMap(map);
+	bermudaTriangle.setMap(map);
+	google.maps.event.addListener(bermudaTriangle, 'click', showArrays);
+
   }
+  
+	function showArrays(event) {
+		var contentString = "<b>Area Description:</b><br />INFOWINDOW_CONTENT";
+		infowindow.setContent(contentString);
+		infowindow.setPosition(event.latLng);
+		infowindow.open(map);
+	}
+
 </script>
 </head>
 <body onload="initialize()">

@@ -1,3 +1,4 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
 #    Copyright (C) 2011 Andrew G. Potter
@@ -29,7 +30,11 @@ ch.setFormatter(logging.Formatter('%(asctime)s %(levelname)-8s %(message)s'))
 Log.addHandler(ch)
 Log.setLevel(logging.DEBUG)
 
-
-if __name__ == '__main__':
+def main():
     t = tray.CAPTray()
     gtk.main()
+
+    
+if __name__ == '__main__':
+    main()
+    
