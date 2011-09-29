@@ -191,7 +191,7 @@ def ReadCAP(file):
         alert.setMsgType(root.msgType.text)
     
         if hasattr(root, 'source'):
-            alert.setSource(root.source)
+            alert.setSource(root.source.text)
             Log.debug("Got alert.source %s" % root.source.text)
         alert.setScope(root.scope.text)
         if hasattr(root, 'restriction'):

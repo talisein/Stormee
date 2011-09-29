@@ -45,6 +45,7 @@ class CAPTray:
         self.caps = []
         self.rssfeeds = set()
         self.seen = set()
+        self.windows = list()
 
 #        self.rssfeeds.add('http://www.usgs.gov/hazard_alert/alerts/landslides.rss')
 
@@ -75,11 +76,15 @@ class CAPTray:
         gobject.timeout_add(100, self.startup_cb)
     
     def execute_cb(self, widget, event, data=None):
-        window = Window()
+        window = Window(self)
+        self.windows.append(window)
         
         localcaps = list(self.caps)
         for i in range(len(localcaps)):
             window.acceptCap(heapq.heappop(localcaps))
+    
+    def window_quit_cb(self, window):
+        self.windows.remove(window)
     
     def quit_cb(self, widget, data=None):
         gtk.main_quit()
@@ -105,6 +110,9 @@ class CAPTray:
                 if alert.checkUGC(STATECODE, FIPSCODE, UGCCODE) or alert.checkCoords(LATLONG_COORDS) or alert.checkArea('FIPS6', '000000') or True:
                     if not alert.isExpired():
                         heapq.heappush(self.caps,alert)
+                        for window in self.windows:
+                            window.acceptCap(alert)
+                            
                         if not isInitial:
                             if len(alert.infos) is 0:
                                 Log.debug("Alert %s had no info." % alert.id)

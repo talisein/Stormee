@@ -338,11 +338,11 @@ class Alert:
         else:
             for reference in references.strip().split(' '):
                 if reference.count(',') is 2:
-                    (sender,identifier,sent) = reference.split(references,',')
+                    (sender,identifier,sent) = reference.split(',')
                     self.references.append(identifier)
                 else:
                     self.references.append(reference)
-                    Log.warning("Reference {0} not valid to specifications".format(reference))
+                    Log.warning("Reference '{0}' not valid to CAP 1.2 specification".format(reference))
                     
     @staticmethod
     def aboutReferences():
@@ -951,6 +951,7 @@ class NWIS:
                  'TXO': 'Transmitter Carrier On',
                  'TXB': 'Transmitter Backup On',
                  'TXP': 'Transmitter Primary On',
+                 'X5': 'Attempt to Locate Missing Person', # Can't find official source for this code!
                  })
     
     nwis_detail = dict({'ADR': 'A non-emergency message providing updated information about an event in progress, an event that has expired or concluded early, pre-event preparation or mitigation activities, post-event recovery operations, or other administrative matters pertaining to the Emergency Alert System.',

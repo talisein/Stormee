@@ -286,11 +286,12 @@ class Window:
         self.treeStore.set_default_sort_func(self.alert_treeSort)
         self.treeStore.set_sort_column_id(-1, gtk.SORT_ASCENDING)
 
-    def __init__(self):
+    def __init__(self, tray):
         self.alerts = dict()
         self.ids = list()
         self.parents = set()
         self.parentiters = dict()
+        self.tray = tray
         
         self.index = -1
         builder = gtk.Builder()
@@ -301,10 +302,11 @@ class Window:
         self.__init_combobox(builder)
         self.__init_combobox2(builder)
         self.keyValueWindow = builder.get_object("keyValueScrolledWindow")
+        self.keyValueWindow.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
         self.viewport = gtk.Viewport()
         self.keyTable = KeyTable() 
         self.keyValueWindow.add_with_viewport(self.keyTable)
-       
+        
         self.notebook = builder.get_object("notebook")
         self.window.show_all()
 
@@ -326,6 +328,11 @@ class Window:
         self.populateCap(alert)
 
     def on_mainWindow_destroy(self, widget, data=None):
+        Log.debug("Window killed, removing...")
+        self.tray.window_quit_cb(self)
+
+    def removeCap(self, alert):
+        # TODO: Implement removal
         pass
 
     def acceptCap(self, alert):
@@ -346,7 +353,12 @@ class Window:
                 if len(p) is 1:
                     self.treeStore.append(self.parentiters[p[0]], [alert])
                 else:
-                    Log.debug("Multiple parents for an alert!")
+                    Log.warning("Multiple parents for CAP {0}! Splitting off...".format(alert.id))
+                    self.treeStore.append(None, [alert])
+                    self.parents.add(alert)
+                    self.parentiters[alert] = iter
+                    
+                    
             if self.comboBox2.get_active() is -1:
                 self.comboBox2.set_active(0)
                 self.comboBox2_changed_cb(self.comboBox2)
@@ -428,6 +440,10 @@ class Window:
             for info in alert.infos:
                 tb = gtk.TextBuffer()
                 tv = gtk.TextView(tb)
+                tv.set_wrap_mode(gtk.WRAP_WORD)
+                tv.set_editable(False)
+                
+                
                 label = gtk.Label('Info')
                 pn = self.notebook.append_page(tv, label)
                 self.notebook.set_current_page(pn)
