@@ -1,0 +1,75 @@
+<?xml version = '1.0' encoding = 'UTF-8' standalone = 'yes'?>
+<?xml-stylesheet href='http://alerts.weather.gov/cap/capatomproduct.xsl' type='text/xsl'?>
+<alert xmlns = 'urn:oasis:names:tc:emergency:cap:1.1'>
+<!-- http-date = Thu, 31 Mar 2011 02:04:00 GMT -->
+<identifier>NOAA-NWS-ALERTS-AR20110331020400FloodWarning20110401020400AR.MEGFLSMEG.68d48b4d20648cf2444e7093611920c5</identifier>
+<sender>w-nws.webmaster@noaa.gov</sender>
+<sent>2011-03-31T00:39:27-05:00</sent>
+<status>Actual</status>
+<msgType>Alert</msgType>
+<scope>Public</scope>
+<note>Alert for Mississippi (Arkansas) Issued by the National Weather Service</note>
+<references></references>
+<info>
+<category>Met</category>
+<event>Flood Warning</event>
+<urgency>Expected</urgency>
+<severity>Moderate</severity>
+<certainty>Likely</certainty>
+<eventCode>
+<valueName>SAME</valueName>
+<value></value>
+</eventCode>
+<effective>2011-03-30T21:04:00-05:00</effective>
+<expires>2011-03-31T21:04:00-05:00</expires>
+<senderName>NWS Memphis (Western Tennessee, Eastern Arkansas and Northern Mississippi)</senderName>
+<headline>Flood Warning issued March 30 at 9:04PM CDT expiring March 31 at 9:04PM CDT by NWS Memphis</headline>
+<description>THE FLOOD WARNING CONTINUES FOR THE MISSISSIPPI RIVER.
+THE FLOOD WARNING CONTINUES FOR
+THE MISSISSIPPI RIVER AT CARUTHERSVILLE
+* UNTIL FURTHER NOTICE.
+* AT 08 PM WEDNESDAY THE STAGE WAS 35.1 FEET.
+* MINOR FLOODING IS OCCURRING AND MINOR FLOODING IS FORECAST.
+* FLOOD STAGE IS 32.0 FEET.
+* AT 35.0 FEET...BARR ROAD IS UNDER TWO FEET OF WATER IN PLACES, AND
+EVACUATIONS ARE VERY DIFFICULT.  MOST UNPROTECTED FARMLAND NEAR THE
+RIVER AND PORTIONS OF HIGHWAY 104 IN WESTERN DYER COUNTY TN IS
+IMPACTED.</description>
+<instruction>THE NEXT RIVER STATEMENT WILL BE ISSUED TOMORROW MORNING OR SOONER IF CONDITIONS WARRANT.
+FOR GRAPHICAL RIVER AND FLOOD INFORMATION...PLEASE GO TO
+WWW.WEATHER.GOV AND CLICK NEAR MEMPHIS ON THE MAP. THEN SELECT RIVERS
+AND LAKES AHPS UNDER CURRENT CONDITIONS.
+DO NOT DRIVE THROUGH FLOODED AREAS...TURN AROUND DON`T DROWN.
+STAY TUNED TO YOUR WEATHER RADIO AND YOUR LOCAL NEWS MEDIA FOR THE
+LATEST RIVER INFORMATION.</instruction>
+<parameter>
+<valueName>WMOHEADER</valueName>
+<value></value>
+</parameter>
+<parameter>
+<valueName>UGC</valueName>
+<value>ARC093-TNC045-095-097-MOC155</value>
+</parameter>
+<parameter>
+<valueName>VTEC</valueName>
+<value>/O.CON.KMEG.FL.W.0009.000000T0000Z-000000T0000Z/
+/CRTM7.1.ER.110302T0134Z.110320T0000Z.000000T0000Z.NO/</value>
+</parameter>
+<parameter>
+<valueName>TIME...MOT...LOC</valueName>
+<value></value>
+</parameter>
+<area>
+<areaDesc>Mississippi</areaDesc>
+<polygon></polygon>
+<geocode>
+<valueName>FIPS6</valueName>
+<value>005093</value>
+</geocode>
+<geocode>
+<valueName>UGC</valueName>
+<value>ARC093</value>
+</geocode>
+</area>
+</info>
+</alert>

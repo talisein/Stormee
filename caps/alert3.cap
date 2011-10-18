@@ -1,0 +1,53 @@
+<alert>
+<identifier>USGS-earthquakes-at00424649.1.20090929T180313.951Z</identifier>
+<sender>
+http://earthquake.usgs.gov/recenteqsUS/contacts.htm#at
+</sender>
+<sent>2009-09-29T18:03:13+00:00</sent>
+<status>Actual</status>
+<msgType>Update</msgType>
+<scope>Public</scope>
+<references>
+USGS-earthquakes-at00424649.1.20090929T175718.423Z/http://earthquake.usgs.gov/recenteqsUS/contacts.htm#at
+</references>
+<info>
+<category>Geo</category>
+<event>Earthquake</event>
+<urgency>Past</urgency>
+<severity>Extreme</severity>
+<certainty>Likely</certainty>
+<senderName>
+West Coast and Alaska Tsunami Warning Center/NOAA/NWS
+</senderName>
+<headline>
+EQ 7.9 PAGO PAGO, American Samoa - PRELIMINARY REPORT
+</headline>
+<description>
+An earthquake with magnitude 7.9 occurred near PAGO PAGO, American Samoa at 17:48:15.00 UTC on Sep 29, 2009. (This event has been reviewed by a seismologist.)
+</description>
+<web>
+http://earthquake.usgs.gov/eqcenter/recenteqsus/Quakes/at00424649.php
+</web>
+<contact>
+http://earthquake.usgs.gov/recenteqsUS/contacts.htm#at
+</contact>
+<parameter>EventTime=2009-09-29T17:48:15+00:00</parameter>
+<parameter>EventIDKey=at00424649</parameter>
+<parameter>Version=1</parameter>
+<parameter>Magnitude=7.9</parameter>
+<parameter>Depth=33.0 km (20.5 miles)</parameter>
+<parameter>HorizontalError=0.0 km</parameter>
+<parameter>VerticalError=0.0 km</parameter>
+<parameter>NumStations=23</parameter>
+<parameter>NumPhases=23</parameter>
+<parameter>MinDistance=425.4 km</parameter>
+<parameter>RMSTimeError=2.24 seconds</parameter>
+<parameter>AzimuthalGap=58 degrees</parameter>
+<area>
+<areaDesc>
+99 miles (159 km) SW of PAGO PAGO, American Samoa; 111 miles (179 km) S of APIA, Samoa; 274 miles (441 km) NE of Neiafu, Tonga; 1466 miles (2360 km) W of PAPEETE, Tahiti, French Polynesia
+</areaDesc>
+<circle>-15.400,-171.600 157.1</circle>
+</area>
+</info>
+</alert>

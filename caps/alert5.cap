@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="capstateoes_simple.xsl" type="text/xsl"?>
+<alert xmlns="urn:oasis:names:tc:emergency:cap:1.1">
+  <identifier>KREV3813352779</identifier>
+  <sender>KREV@nwws.oes.ca.gov</sender>
+  <sent>2011-10-03T15:52:35-07:00</sent>
+  <status>Actual</status>
+  <msgType>Cancel</msgType>
+  <scope>Public</scope>
+  <code>WWUS45 KREV 032252</code>
+  <code>WSWREV</code>
+  <note>URGENT - WINTER WEATHER MESSAGE</note>
+  <incidents>KREV.WS.A.0011</incidents>
+  <info>
+    <category>Met</category>
+    <event></event>
+    <urgency>Future</urgency>
+    <severity>Severe</severity>
+    <certainty>Possible</certainty>
+    <expires>2011-10-05T23:00:00-07:00</expires>
+    <senderName>NATIONAL WEATHER SERVICE RENO NV</senderName>
+    <headline>FIRST WINTER STORM OF THE SEASON
+            </headline>
+    <description>...WINTER STORM WATCH IS CANCELLED...
+            THE NATIONAL WEATHER SERVICE IN RENO HAS CANCELLED THE WINTER
+            STORM WATCH.
+            </description>
+    <instruction>.A STRONG AREA OF LOW PRESSURE WILL DROP INTO THE WESTERN U.S.
+            TUESDAY INTO WEDNESDAY...BRINGING STRONG WINDS AND MODERATE TO
+            LOCALLY HEAVY VALLEY RAIN AND MOUNTAIN SNOW TO THE REGION.
+            HEAVIEST PRECIPITATION WILL FALL LATE TUESDAY NIGHT INTO
+            WEDNESDAY MORNING...WITH ACCUMULATING SNOWFALL IN THE HIGHER
+            ELEVATIONS OF THE SIERRA. THOSE PLANNING TRAVEL OVER THE SIERRA
+             THIS WEEK SHOULD PREPARE FOR WINTER CONDITIONS NOW TO AVOID BEING
+            CAUGHT OFF GUARD BY THIS EARLY SEASON STORM.
+            ALTHOUGH SIGNIFICANT PRECIPITATION IS STILL EXPECTED FOR
+            LASSEN...EASTERN PLUMAS AND SIERRA COUNTIES TUESDAY NIGHT AND
+            WEDNESDAY...SNOW LEVELS SHOULD REMAIN TOO HIGH TO AFFECT AREAS
+             BELOW 6000 TO 6500 FEET WITH MORE THAN A VERY LIGHT ACCUMULATION.
+            THEREFORE...THE WINTER STORM WATCH HAS BEEN CANCELLED. A FEW
+            INCHES OF SNOWFALL IS STILL POSSIBLE ABOVE 6000 FEET WEDNESDAY
+            MORNING WHICH COULD AFFECT YUBA PASS.
+            </instruction>
+    <parameter>
+      <valueName>P-VTEC</valueName>
+      <value>/O.CAN.KREV.WS.A.0011.111005T0600Z-111006T0600Z/</value>
+    </parameter>
+    <parameter>
+      <valueName>route</valueName>
+      <value>ncsnorth.oes.ca.gov;capserverNorth</value>
+    </parameter>
+    <area>
+      <areaDesc>LASSEN-EASTERN PLUMAS-EASTERN SIERRA COUNTIES-
+                  </areaDesc>
+      <polygon>41.182886,-121.331791 41.165054,-120.03012 41.466278,-120.210846 41.697216,-120.24097 41.87795,-120.170685 41.97836,-120.08032 41.97836,-119.98996 38.976177,-119.97992 37.46491,-117.842255 37.46305,-118.77502 37.456657,-118.78351 37.58584,-119.022064 37.58584,-119.022064 37.630535,-119.03256 37.711052,-119.09634 37.731133,-119.196724 37.81146,-119.1666 37.891785,-119.17664 38.072514,-119.2871 38.185135,-119.60142 38.413902,-119.65861 38.86573,-120.160645 38.86573,-120.160645 39.20712,-120.25101 39.468174,-120.45183 39.56858,-120.49199 39.648907,-120.58235 39.68907,-120.712875 40.130863,-120.883575 40.21119,-121.04422 40.422043,-121.05426 40.432083,-121.24504 40.59274,-121.31533 40.59274,-121.31533 41.182886,-121.331791</polygon>
+      <geocode>
+        <valueName>UGC</valueName>
+        <value>CAZ071-040000-</value>
+      </geocode>
+    </area>
+  </info>
+</alert>
