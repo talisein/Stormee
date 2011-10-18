@@ -51,5 +51,5 @@ license (since that's what gSOAP's machine generated code is under).
 The XMPP server is ejabberd running on an Amazon EC2 node.
 
 The python directory has a python prototype for Stormee. It doesn't
-interface with IPAWS but does have an RSS reader. It may not work out
-of the box but it shouldn't take much work to fix.
+interface with IPAWS but does have an RSS reader.
+

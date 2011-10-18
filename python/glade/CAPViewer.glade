@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <requires lib="gtk+" version="2.16"/>
+  <requires lib="gtk+" version="2.24"/>
   <object class="GtkAccelGroup" id="accelgroup1"/>
   <object class="GtkListStore" id="alertListStore"/>
   <object class="GtkListStore" id="comboBoxListStore">
@@ -51,11 +51,6 @@
         </child>
       </object>
     </child>
-  </object>
-  <object class="GtkImage" id="image1">
-    <property name="visible">True</property>
-    <property name="can_focus">False</property>
-    <property name="stock">gtk-open</property>
   </object>
   <object class="GtkListStore" id="infoListStore">
     <columns>
@@ -155,18 +150,6 @@
                         <property name="accel_group">accelgroup1</property>
                       </object>
                     </child>
-                    <child>
-                      <object class="GtkImageMenuItem" id="openFileMenuItem">
-                        <property name="label">Open File...</property>
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="use_action_appearance">False</property>
-                        <property name="image">image1</property>
-                        <property name="use_stock">False</property>
-                        <property name="accel_group">accelgroup1</property>
-                        <signal name="activate" handler="activateOpenFileMenu" swapped="no"/>
-                      </object>
-                    </child>
                   </object>
                 </child>
               </object>
@@ -230,31 +213,6 @@
                 </child>
               </object>
             </child>
-            <child>
-              <object class="GtkMenuItem" id="viewMenuItem">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="use_action_appearance">False</property>
-                <property name="label" translatable="yes">_View</property>
-                <property name="use_underline">True</property>
-                <child type="submenu">
-                  <object class="GtkMenu" id="menu1">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <child>
-                      <object class="GtkMenuItem" id="viewLogMenuItem1">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="use_action_appearance">False</property>
-                        <property name="label" translatable="yes">Log</property>
-                        <property name="use_underline">True</property>
-                        <signal name="activate" handler="view_log_cb" swapped="no"/>
-                      </object>
-                    </child>
-                  </object>
-                </child>
-              </object>
-            </child>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -304,7 +262,13 @@
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <child>
-                          <placeholder/>
+                          <object class="GtkViewport" id="viewport1">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <child>
+                              <placeholder/>
+                            </child>
+                          </object>
                         </child>
                       </object>
                       <packing>

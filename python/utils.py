@@ -46,21 +46,21 @@ def point_inside_polygon(x,y,poly):
 
 
 def mapPolygon(polygon, markerCoords='38.56513, -121.75156', areaDesc=' ', markerTitle=' '):
-    p1 = open('../poly1.html').read().replace('ORIGIN', markerCoords).replace('MARKER_TITLE',markerTitle)
+    p1 = open('html/poly1.html').read().replace('ORIGIN', markerCoords).replace('MARKER_TITLE',markerTitle)
     for x in range(len(polygon)):
         if x is not len(polygon) - 1:
             lat, long = polygon[x]
             p1 +='new google.maps.LatLng(' + str(lat) + ', ' + str(long) + '),\n'
         else:
             p1 +='new google.maps.LatLng(' + str(lat) + ', ' + str(long) + ')\n'
-    p1 += open('../poly2.html').read().replace('INFOWINDOW_CONTENT',str(areaDesc).strip().replace("\n",'<br />'))
+    p1 += open('html/poly2.html').read().replace('INFOWINDOW_CONTENT',str(areaDesc).strip().replace("\n",'<br />'))
     return p1
 
 
 def mapCircle(circle, markerCoords='38.56513,-121.75156', areaDesc=' ', markerTitle=' '):
     x, y, radius = circle
     radius = radius * 1000 # meters
-    p1 =  open('../circle1.html').read().replace('ORIGIN', markerCoords).replace('RADIUSMETERS', str(radius)).replace('CENTER', str(x) + ', ' + str(y).replace('MARKER_TITLE',markerTitle))
+    p1 =  open('html/circle1.html').read().replace('ORIGIN', markerCoords).replace('RADIUSMETERS', str(radius)).replace('CENTER', str(x) + ', ' + str(y).replace('MARKER_TITLE',markerTitle))
     p1.replace('INFOWINDOW_CONTENT',areaDesc.strip().replace("\n",'<br /'))
     
     return p1

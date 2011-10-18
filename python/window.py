@@ -295,17 +295,17 @@ class Window:
         
         self.index = -1
         builder = gtk.Builder()
-        builder.add_from_file('../glade/CAPViewer.glade')
+        builder.add_from_file('glade/CAPViewer.glade')
         builder.connect_signals(self)
         self.window = builder.get_object("mainWindow")
         
         self.__init_combobox(builder)
         self.__init_combobox2(builder)
-        self.keyValueWindow = builder.get_object("keyValueScrolledWindow")
-        self.keyValueWindow.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-        self.viewport = gtk.Viewport()
+        # self.keyValueWindow = builder.get_object("keyValueScrolledWindow")
+        # self.keyValueWindow.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+        self.viewport = builder.get_object("viewport1")
         self.keyTable = KeyTable() 
-        self.keyValueWindow.add_with_viewport(self.keyTable)
+        self.viewport.add(self.keyTable);
         
         self.notebook = builder.get_object("notebook")
         self.window.show_all()
