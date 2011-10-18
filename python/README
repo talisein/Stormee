@@ -1,3 +1,18 @@
+**** THIS PYTHON APPLICATION IS DEPRECIATED ****
+
+
+The code in this directory is for historical purposes only.
+
+If you want to use it you will have to tell it where the html files
+are now located. The glade file may or may not be different from what
+the code expects, so you could have to deal with that too.
+
+As of 18 OCT 2011, here are the features the C++ version doesn't have:
+* An applet sitting in the dock
+* Parsing of VTEC strings in weather related messages
+* RSS polling
+
+
 Dependancies:
 python
 pygtk
