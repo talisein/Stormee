@@ -15,7 +15,7 @@ link_directories(
 include_directories(
     ${GSOAP_INCLUDE_DIRS}  ${STROPHE_INCLUDE_DIRS})
 
-add_executable(StormeeBridge main.c plugin.c soapC.c soapClient.c smdevp.c mecevp.c wsseapi.c threads.c)
+add_executable(StormeeBridge main.c plugin.c soapC.c soapClient.c smdevp.c mecevp.c wsseapi.c threads.c ipaws.c)
 
 target_link_libraries(StormeeBridge 
     ${GSOAP_LIBRARIES} ${STROPHE_LIBRARIES})

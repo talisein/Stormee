@@ -32,6 +32,6 @@ pkg_check_modules(STROPHE libstrophe REQUIRED)
 set(CMAKE_BUILD_TYPE debug)
 set(CMAKE_C_FLAGS_DEBUG "-ggdb -Os")
 
-add_definitions(-DWITH_OPENSSL -DWITH_DOM -Wall -Wextra -std=c99)
+add_definitions(-DWITH_OPENSSL -DWITH_DOM -Wall -Wextra -pedantic -std=c99)
 
 add_subdirectory (src)
