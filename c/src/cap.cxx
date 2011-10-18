@@ -56,7 +56,7 @@ Glib::ustring CAPViewer::CAP::getTitle() const {
       auto iter = info.getEventCodes().find("SAME");
       if (iter->second.length() > 0)
 	return iter->second; // TODO: expand out acronym
-    }
+    } 
   }
 
   if ( note.length() > 0 ) {
@@ -664,7 +664,7 @@ const Glib::ustring CAPViewer::CAP::aboutSender() {
   return _("Identifies the originator of this alert. Guaranteed by assigner to be unique globally; e.g., may be based on an Internet domain name.");
 }
 
-const Glib::ustring aboutSent() {
+const Glib::ustring CAPViewer::CAP::aboutSent() {
   return _("The time and date of the origination of the alert message");
 }
 

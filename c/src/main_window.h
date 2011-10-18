@@ -11,6 +11,9 @@
 #include <gtkmm/treestore.h>
 #include <gtkmm/combobox.h>
 #include <gtkmm/tooltip.h>
+#include <gtkmm/notebook.h>
+#include <gtkmm/texttagtable.h>
+#include <gtkmm/textbuffer.h>
 #include <glibmm/thread.h>
 #include <giomm/file.h>
 
@@ -82,7 +85,8 @@ namespace CAPViewer {
     void produce_cap_from_url(const Glib::ustring&);
     void consume_cap();
     void on_combo_changed();
-    void addKeyValue(const Glib::ustring&, const Glib::ustring&, const Glib::ustring&, const Glib::ustring& valueTooltip = "");
+    void addKeyValue(const Glib::ustring&, const Glib::ustring&, const Glib::ustring& = "", const Glib::ustring& valueTooltip = "");
+    void addKeyValueChild(const Gtk::TreeNodeChildren&, const Glib::ustring&, const Glib::ustring&, const Glib::ustring& keyTooltip = "", const Glib::ustring& valueTooltip = "");
     bool m_query_tooltip(int x, int y, bool keyboard_tooltip, const Glib::RefPtr<Gtk::Tooltip>& tooltip);
 
     std::set<CAPViewer::CAP> seen_caps;
@@ -90,12 +94,16 @@ namespace CAPViewer {
     Glib::Mutex mutex;
     Glib::Dispatcher signal_cap;
 
-    Gtk::TreeView* keyValueTreeView;
     Glib::RefPtr<Gtk::TreeStore> m_refComboBoxModel;
     Glib::RefPtr<Gtk::TreeStore> m_refKeyValueModel;
     Gtk::ComboBox* m_comboBox;
+    Gtk::TreeView* keyValueTreeView;
+    Gtk::Notebook* m_notebook;
+    Glib::RefPtr<Gtk::TextTagTable> tagtable;
+    Glib::RefPtr<Gtk::TextBuffer::Tag> centerMonoTag;
+    Glib::RefPtr<Gtk::TextBuffer::Tag> leftTag;
+    Glib::RefPtr<Gtk::TextBuffer::Tag> leftMonoTag;
 
-    
   };
 
 

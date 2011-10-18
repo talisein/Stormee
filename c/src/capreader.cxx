@@ -2,6 +2,7 @@
 #include <glibmm/convert.h>
 #include <glib.h>
 #include "capreader.hxx"
+#include "util.h"
 
 CAPViewer::CAPReader::CAPReader() : inEventCode(false), inParameter(false), inGeocode(false) {
 }
@@ -35,12 +36,15 @@ void CAPViewer::CAPReader::on_start_element(const Glib::ustring& name,
   if (name.find("alert") != Glib::ustring::npos) {
     cap = std::shared_ptr<CAPViewer::CAP>(new CAPViewer::CAP());
     node = nAlert;
+    g_message("Starting a new alert!");
     for (auto attr : attributes) {
       if (attr.name.find("xmlns") != Glib::ustring::npos)
 	cap->setVersion(attr.value);
     }
   } else if (name.find("identifier") != Glib::ustring::npos) {
     node = nIdentifier;
+  } else if (name.find("senderName") != Glib::ustring::npos) {
+    node = nSenderName;
   } else if (name.find("sender") != Glib::ustring::npos) {
     node = nSender;
   } else if (name.find("sent") != Glib::ustring::npos) {
@@ -49,8 +53,6 @@ void CAPViewer::CAPReader::on_start_element(const Glib::ustring& name,
     node = nStatus;
   } else if (name.find("msgType") != Glib::ustring::npos) {
     node = nMsgType;
-  } else if (name.find("source") != Glib::ustring::npos) {
-    node = nSource;
   } else if (name.find("scope") != Glib::ustring::npos) {
     node = nScope;
   } else if (name.find("restriction") != Glib::ustring::npos) {
@@ -97,8 +99,6 @@ void CAPViewer::CAPReader::on_start_element(const Glib::ustring& name,
     node = nOnset;
   }  else if (name.find("expires") != Glib::ustring::npos) {
     node = nExpires;
-  }  else if (name.find("senderName") != Glib::ustring::npos) {
-    node = nSenderName;
   }  else if (name.find("headline") != Glib::ustring::npos) {
     node = nHeadline;
   }  else if (name.find("description") != Glib::ustring::npos) {
@@ -142,13 +142,16 @@ void CAPViewer::CAPReader::on_start_element(const Glib::ustring& name,
     node = nDigest;
   } else if (name.find("resource") != Glib::ustring::npos) {
       node = nResource;
-      resource = std::shared_ptr<CAPViewer::Resource>(new CAPViewer::Resource);
+      resource = std::shared_ptr<CAPViewer::Resource>(new CAPViewer::Resource());
+  } else if (name.find("source") != Glib::ustring::npos) {
+    node = nSource;
   } else {
     g_message("Unknown CAP field '%s'", name.c_str());
   }
 }
 
 void CAPViewer::CAPReader::on_end_element(const Glib::ustring& name) {
+  str_buf = CAPViewer::Util::squish(str_buf);
   switch (node) {
   case nIdentifier: cap->setId(str_buf);
     break;
@@ -255,23 +258,28 @@ void CAPViewer::CAPReader::on_end_element(const Glib::ustring& name) {
     break;
   case nGeocode: 
     break;
-  case nResourceDesc: resource->setResourceDesc(str_buf);
+  case nResourceDesc: 
+      resource->setResourceDesc(str_buf);
     break;
-  case nMimeType: resource->setMimeType(str_buf);
+  case nMimeType: 
+      resource->setMimeType(str_buf);
     break;
   case nSize: 
     try {
-      resource->setSize(str_buf);
+	resource->setSize(str_buf);
     } catch (CAPViewer::SizeParseError e) {
       g_warning("Failed to convert resource's size parameter to internal type (%s)", e.what());
       // TODO: Size is probably sent to max guint64. 
     }
     break;
-  case nUri: resource->setUri(str_buf);
+  case nUri: 
+      resource->setUri(str_buf);
     break;
-  case nDerefUri: resource->setDerefUri(str_buf);
+  case nDerefUri: 
+      resource->setDerefUri(str_buf);
     break;
-  case nDigest: resource->setDigest(str_buf);
+  case nDigest: 
+      resource->setDigest(str_buf);
     break;
   default:
     if (!str_buf.empty() && str_buf.find_first_not_of("\n\t\r ") != Glib::ustring::npos)
@@ -282,12 +290,17 @@ void CAPViewer::CAPReader::on_end_element(const Glib::ustring& name) {
 
   if (name.find("alert") != Glib::ustring::npos) {
     caps.push_back(cap);
+    g_message("Pushed a full <alert>!");
   } else if (name.find("info") != Glib::ustring::npos) {
     cap->addInfo(*info);
   } else if (name.find("area") != Glib::ustring::npos) {
-    info->addArea(*area);
-  } else if (name.find("resource") != Glib::ustring::npos) {
-    info->addResource(*resource);
+    if ( name.find("areaDesc") == Glib::ustring::npos) {
+      info->addArea(*area);
+    }
+  } else if ( name.find("resource") != Glib::ustring::npos) {
+    if ( name.find("resourceDesc") == Glib::ustring::npos ) {
+	info->addResource(*resource);
+    }
   } else if (name.find("eventCode") != Glib::ustring::npos) {
     inEventCode = false;
     valueName.clear();

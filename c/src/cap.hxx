@@ -103,7 +103,6 @@ namespace CAPViewer {
     explicit Circle(std::stringstream&);
     Circle(const Glib::ustring&);
 
-    
     Circle& setCircle(const Glib::ustring&);
     Coords getCoords() const { return coords; };
     gdouble getRadius() const { return radius; };
@@ -200,9 +199,6 @@ namespace CAPViewer {
 
   class Info {
   public:
-    Info() { eventCodes.clear(); };
-    ~Info() { };
-
     Info& setLanguage(const Glib::ustring& in) { language = in; return *this; };
     Glib::ustring getLanguage() const { return language; };
     static const Glib::ustring aboutLanguage();
@@ -223,7 +219,7 @@ namespace CAPViewer {
     std::multimap<Glib::ustring, Glib::ustring> getParameters() const { return parameters; };
     static const Glib::ustring aboutParameters();
 
-    Info& addResource(const Resource& in) {resources.push_back(in); return *this;};
+    Info& addResource(const Resource& in) { resources.push_back(in); return *this; };
     std::vector<Resource> getResources() const { return resources; };
 
     Info& addArea(const Area& in) { areas.push_back(in); return *this; };
