@@ -1,29 +1,53 @@
+Stormee: An emergency notification viewer
+
+This application parses xml files that adhere to the Common Alerting
+Protocol (CAP), an OASIS standard adopted by FEMA, State, and local
+agencies for providing emergency notifications to the public. CAP
+notifications include details such as a timeframe, certainty,
+severity, textual descriptions and instructions as well as maps and
+web links for more information.
+
+FEMA is developing a platform called 'IPAWS-OPEN' that aggregates CAP
+messages for the United States and territories. Due to the
+architecture adopted by FEMA, the public can not access this aggregate
+service without signing a memorandum regarding terms of use. Stormee
+is part of a system of two components: 1 component accesses FEMA's
+aggregator and publishes it to an XMPP Pub/Sub node. This component is
+in the 'ipaws' directory; it is not usable without a X509 certificate
+provided by FEMA. The second component, Stormee, accesses the XMPP
+Pub/Sub node and accepts alerts based on the user's location and
+filter preferences.
+
+Stormee is in pre-alpha development.
+
 Dependancies:
-python
-pygtk
-lxml
-dateutil
-pywebkitgtk
-pynotify
+cmake
+libxml2
+gtkmm3
+webkitgtk3
+boost (Maybe not?)
+gettext
+libstrophe
 
-This program monitors feed that provide emergency notifications in the
-"Common Alerting Protocol" or CAP xml-encapsulation. CAP is an OASIS
-standard and should become increasingly prevalent.
+Current features:
+o Read CAP files from local disk and display in the gui
 
-The largest producer of CAP messages that I've found so far is the
-National Weather Service. The USGS also has a feel for large
-earthquakes, and the state of California has a statewide feed as
-well. To learn more about CAP, check out
-http://www.incident.com/cookbook/index.php/Main_Page
+Planned features:
+o Read CAP files from the XMPP Pub/Sub node
+o Use libnotify
+o Provide preferences to selecting location, filtering, etc
+o Multiplatform
 
-Currently, this program hits up all three of the above feeds, and if
-the event includes the area the user is in a notification is displayed
-and, through the status tray, you can see all the details of the
-message. Right now you have to edit tray.py and change LATLONG_COORDS,
-FIPSCODE and UGCCODE to get the right filtering. Other than that the
-application is pretty functional.
+Technical Jargon: 
+Stormee is a GTK+3 C++ application that interfaces with a XEP-0127
+Pub/Sub server. XMPP communication is provided by libstrophe. This
+component is licensed under the GPLv3+ license.
 
-To get it to run you have to execute it from the src directory,
-because I don't know how to make an installer or .desktop file or
-anything proper like that. 
+The IPAWS interface (as yet unnamed) is a C application that uses the
+gSOAP library to interface with IPAWS-OPEN 3. XMPP communication is
+provided by libstrophe. This component is licensed under the GPLv2+
+license (since that's what gSOAP's machine generated code is under).
 
+The python directory has a python prototype for Stormee. It doesn't
+interface with IPAWS but does have an RSS reader. It may not work out
+of the box but it shouldn't take much work to fix.
