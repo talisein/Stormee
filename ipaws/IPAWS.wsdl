@@ -1,0 +1,386 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<WL5G3N0:definitions name="IPAWS_CAPService" targetNamespace="http://gov.fema.ipaws.services/IPAWS_CAPService/" xmlns:WL5G3N2="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:WL5G3N0="http://schemas.xmlsoap.org/wsdl/" xmlns:WL5G3N1="http://gov.fema.ipaws.services/IPAWS_CAPService/">
+    <WL5G3N0:types>
+        <xsd:schema elementFormDefault="qualified" targetNamespace="http://gov.fema.ipaws.services/caprequest" xmlns:intf="http://gov.fema.ipaws.services/IPAWS_CAPService/" xmlns:req="http://gov.fema.ipaws.services/caprequest" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+            <xsd:complexType name="requestParameterList">
+                <xsd:sequence>
+                    <xsd:element minOccurs="0" name="requestAPI" type="xsd:string"/>
+                    <xsd:element minOccurs="0" name="requestOperation" type="xsd:string"/>
+                    <xsd:element maxOccurs="unbounded" minOccurs="0" name="parameters" type="req:parameterListItem"/>
+                </xsd:sequence>
+            </xsd:complexType>
+            <xsd:complexType name="parameterListItem">
+                <xsd:sequence>
+                    <xsd:element minOccurs="0" name="parameterName" type="xsd:string"/>
+                    <xsd:element minOccurs="0" name="comparisonOp" type="xsd:string"/>
+                    <xsd:element maxOccurs="unbounded" minOccurs="0" name="parameterValue" type="xsd:string"/>
+                    <xsd:element minOccurs="0" name="logicalOp" type="xsd:string"/>
+                </xsd:sequence>
+            </xsd:complexType>
+        </xsd:schema>
+        <xsd:schema elementFormDefault="qualified" targetNamespace="http://gov.fema.ipaws.services/capresponse" xmlns:intf="http://gov.fema.ipaws.services/IPAWS_CAPService/" xmlns:resp="http://gov.fema.ipaws.services/capresponse" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+            <xsd:complexType name="responseParameterList">
+                <xsd:sequence>
+                    <xsd:element maxOccurs="unbounded" minOccurs="0" ref="resp:parameterListItem"/>
+                    <xsd:element minOccurs="0" name="ResponseOperation" type="xsd:string"/>
+                    <xsd:element minOccurs="0" name="ResponseType" type="xsd:string"/>
+                </xsd:sequence>
+            </xsd:complexType>
+            <xsd:element name="parameterListItem">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element minOccurs="0" name="parameterName" type="xsd:string"/>
+                        <xsd:element minOccurs="0" name="parameterValue" type="xsd:string"/>
+                        <xsd:element maxOccurs="unbounded" minOccurs="0" name="subParaListItem" type="resp:subParameterListItem"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+            <xsd:complexType name="subParameterListItem">
+                <xsd:sequence>
+                    <xsd:element minOccurs="0" name="subParameterName" type="xsd:string"/>
+                    <xsd:element minOccurs="0" name="subParameterValue" type="xsd:string"/>
+                </xsd:sequence>
+            </xsd:complexType>
+        </xsd:schema>
+        <xsd:schema attributeFormDefault="unqualified" elementFormDefault="qualified" targetNamespace="urn:oasis:names:tc:emergency:cap:1.2" version="1.2" xmlns="http://www.w3.org/2001/XMLSchema" xmlns:cap="urn:oasis:names:tc:emergency:cap:1.2" xmlns:intf="http://gov.fema.ipaws.services/IPAWS_CAPService/" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+            <xsd:element name="alert">
+                <xsd:annotation>
+                    <xsd:documentation>CAP Alert Message (version 1.2)</xsd:documentation>
+                </xsd:annotation>
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="identifier" type="xs:string"/>
+                        <xsd:element name="sender" type="xs:string"/>
+                        <xsd:element name="sent">
+                            <xsd:simpleType>
+                                <xsd:restriction base="xs:dateTime">
+                                    <xsd:pattern value="\d\d\d\d-\d\d-\d\dT\d\d:\d\d:\d\d[-,+]\d\d:\d\d"/>
+                                </xsd:restriction>
+                            </xsd:simpleType>
+                        </xsd:element>
+                        <xsd:element name="status">
+                            <xsd:simpleType>
+                                <xsd:restriction base="xs:string">
+                                    <xsd:enumeration value="Actual"/>
+                                    <xsd:enumeration value="Exercise"/>
+                                    <xsd:enumeration value="System"/>
+                                    <xsd:enumeration value="Test"/>
+                                    <xsd:enumeration value="Draft"/>
+                                </xsd:restriction>
+                            </xsd:simpleType>
+                        </xsd:element>
+                        <xsd:element name="msgType">
+                            <xsd:simpleType>
+                                <xsd:restriction base="xs:string">
+                                    <xsd:enumeration value="Alert"/>
+                                    <xsd:enumeration value="Update"/>
+                                    <xsd:enumeration value="Cancel"/>
+                                    <xsd:enumeration value="Ack"/>
+                                    <xsd:enumeration value="Error"/>
+                                </xsd:restriction>
+                            </xsd:simpleType>
+                        </xsd:element>
+                        <xsd:element minOccurs="0" name="source" type="xs:string"/>
+                        <xsd:element name="scope">
+                            <xsd:simpleType>
+                                <xsd:restriction base="xs:string">
+                                    <xsd:enumeration value="Public"/>
+                                    <xsd:enumeration value="Restricted"/>
+                                    <xsd:enumeration value="Private"/>
+                                </xsd:restriction>
+                            </xsd:simpleType>
+                        </xsd:element>
+                        <xsd:element minOccurs="0" name="restriction" type="xs:string"/>
+                        <xsd:element minOccurs="0" name="addresses" type="xs:string"/>
+                        <xsd:element maxOccurs="unbounded" minOccurs="0" name="code" type="xs:string"/>
+                        <xsd:element minOccurs="0" name="note" type="xs:string"/>
+                        <xsd:element minOccurs="0" name="references" type="xs:string"/>
+                        <xsd:element minOccurs="0" name="incidents" type="xs:string"/>
+                        <xsd:element maxOccurs="unbounded" minOccurs="0" name="info">
+                            <xsd:complexType>
+                                <xsd:sequence>
+                                    <xsd:element default="en-US" minOccurs="0" name="language" type="xs:language"/>
+                                    <xsd:element maxOccurs="unbounded" name="category">
+                                        <xsd:simpleType>
+                                            <xsd:restriction base="xs:string">
+                                                <xsd:enumeration value="Geo"/>
+                                                <xsd:enumeration value="Met"/>
+                                                <xsd:enumeration value="Safety"/>
+                                                <xsd:enumeration value="Security"/>
+                                                <xsd:enumeration value="Rescue"/>
+                                                <xsd:enumeration value="Fire"/>
+                                                <xsd:enumeration value="Health"/>
+                                                <xsd:enumeration value="Env"/>
+                                                <xsd:enumeration value="Transport"/>
+                                                <xsd:enumeration value="Infra"/>
+                                                <xsd:enumeration value="CBRNE"/>
+                                                <xsd:enumeration value="Other"/>
+                                            </xsd:restriction>
+                                        </xsd:simpleType>
+                                    </xsd:element>
+                                    <xsd:element name="event" type="xs:string"/>
+                                    <xsd:element maxOccurs="unbounded" minOccurs="0" name="responseType">
+                                        <xsd:simpleType>
+                                            <xsd:restriction base="xs:string">
+                                                <xsd:enumeration value="Shelter"/>
+                                                <xsd:enumeration value="Evacuate"/>
+                                                <xsd:enumeration value="Prepare"/>
+                                                <xsd:enumeration value="Execute"/>
+                                                <xsd:enumeration value="Avoid"/>
+                                                <xsd:enumeration value="Monitor"/>
+                                                <xsd:enumeration value="Assess"/>
+                                                <xsd:enumeration value="AllClear"/>
+                                                <xsd:enumeration value="None"/>
+                                            </xsd:restriction>
+                                        </xsd:simpleType>
+                                    </xsd:element>
+                                    <xsd:element name="urgency">
+                                        <xsd:simpleType>
+                                            <xsd:restriction base="xs:string">
+                                                <xsd:enumeration value="Immediate"/>
+                                                <xsd:enumeration value="Expected"/>
+                                                <xsd:enumeration value="Future"/>
+                                                <xsd:enumeration value="Past"/>
+                                                <xsd:enumeration value="Unknown"/>
+                                            </xsd:restriction>
+                                        </xsd:simpleType>
+                                    </xsd:element>
+                                    <xsd:element name="severity">
+                                        <xsd:simpleType>
+                                            <xsd:restriction base="xs:string">
+                                                <xsd:enumeration value="Extreme"/>
+                                                <xsd:enumeration value="Severe"/>
+                                                <xsd:enumeration value="Moderate"/>
+                                                <xsd:enumeration value="Minor"/>
+                                                <xsd:enumeration value="Unknown"/>
+                                            </xsd:restriction>
+                                        </xsd:simpleType>
+                                    </xsd:element>
+                                    <xsd:element name="certainty">
+                                        <xsd:simpleType>
+                                            <xsd:restriction base="xs:string">
+                                                <xsd:enumeration value="Observed"/>
+                                                <xsd:enumeration value="Likely"/>
+                                                <xsd:enumeration value="Possible"/>
+                                                <xsd:enumeration value="Unlikely"/>
+                                                <xsd:enumeration value="Unknown"/>
+                                            </xsd:restriction>
+                                        </xsd:simpleType>
+                                    </xsd:element>
+                                    <xsd:element minOccurs="0" name="audience" type="xs:string"/>
+                                    <xsd:element maxOccurs="unbounded" minOccurs="0" name="eventCode">
+                                        <xsd:complexType>
+                                            <xsd:sequence>
+                                                <xsd:element ref="cap:valueName"/>
+                                                <xsd:element ref="cap:value"/>
+                                            </xsd:sequence>
+                                        </xsd:complexType>
+                                    </xsd:element>
+                                    <xsd:element minOccurs="0" name="effective">
+                                        <xsd:simpleType>
+                                            <xsd:restriction base="xs:dateTime">
+                                                <xsd:pattern value="\d\d\d\d-\d\d-\d\dT\d\d:\d\d:\d\d[-,+]\d\d:\d\d"/>
+                                            </xsd:restriction>
+                                        </xsd:simpleType>
+                                    </xsd:element>
+                                    <xsd:element minOccurs="0" name="onset">
+                                        <xsd:simpleType>
+                                            <xsd:restriction base="xs:dateTime">
+                                                <xsd:pattern value="\d\d\d\d-\d\d-\d\dT\d\d:\d\d:\d\d[-,+]\d\d:\d\d"/>
+                                            </xsd:restriction>
+                                        </xsd:simpleType>
+                                    </xsd:element>
+                                    <xsd:element minOccurs="0" name="expires">
+                                        <xsd:simpleType>
+                                            <xsd:restriction base="xs:dateTime">
+                                                <xsd:pattern value="\d\d\d\d-\d\d-\d\dT\d\d:\d\d:\d\d[-,+]\d\d:\d\d"/>
+                                            </xsd:restriction>
+                                        </xsd:simpleType>
+                                    </xsd:element>
+                                    <xsd:element minOccurs="0" name="senderName" type="xs:string"/>
+                                    <xsd:element minOccurs="0" name="headline" type="xs:string"/>
+                                    <xsd:element minOccurs="0" name="description" type="xs:string"/>
+                                    <xsd:element minOccurs="0" name="instruction" type="xs:string"/>
+                                    <xsd:element minOccurs="0" name="web" type="xs:anyURI"/>
+                                    <xsd:element minOccurs="0" name="contact" type="xs:string"/>
+                                    <xsd:element maxOccurs="unbounded" minOccurs="0" name="parameter">
+                                        <xsd:complexType>
+                                            <xsd:sequence>
+                                                <xsd:element ref="cap:valueName"/>
+                                                <xsd:element ref="cap:value"/>
+                                            </xsd:sequence>
+                                        </xsd:complexType>
+                                    </xsd:element>
+                                    <xsd:element maxOccurs="unbounded" minOccurs="0" name="resource">
+                                        <xsd:complexType>
+                                            <xsd:sequence>
+                                                <xsd:element name="resourceDesc" type="xs:string"/>
+                                                <xsd:element name="mimeType" type="xs:string"/>
+                                                <xsd:element minOccurs="0" name="size" type="xs:integer"/>
+                                                <xsd:element minOccurs="0" name="uri" type="xs:anyURI"/>
+                                                <xsd:element minOccurs="0" name="derefUri" type="xs:string"/>
+                                                <xsd:element minOccurs="0" name="digest" type="xs:string"/>
+                                            </xsd:sequence>
+                                        </xsd:complexType>
+                                    </xsd:element>
+                                    <xsd:element maxOccurs="unbounded" minOccurs="0" name="area">
+                                        <xsd:complexType>
+                                            <xsd:sequence>
+                                                <xsd:element name="areaDesc" type="xs:string"/>
+                                                <xsd:element maxOccurs="unbounded" minOccurs="0" name="polygon" type="xs:string"/>
+                                                <xsd:element maxOccurs="unbounded" minOccurs="0" name="circle" type="xs:string"/>
+                                                <xsd:element maxOccurs="unbounded" minOccurs="0" name="geocode">
+                                                    <xsd:complexType>
+                                                        <xsd:sequence>
+                                                            <xsd:element ref="cap:valueName"/>
+                                                            <xsd:element ref="cap:value"/>
+                                                        </xsd:sequence>
+                                                    </xsd:complexType>
+                                                </xsd:element>
+                                                <xsd:element minOccurs="0" name="altitude" type="xs:decimal"/>
+                                                <xsd:element minOccurs="0" name="ceiling" type="xs:decimal"/>
+                                            </xsd:sequence>
+                                        </xsd:complexType>
+                                    </xsd:element>
+                                </xsd:sequence>
+                            </xsd:complexType>
+                        </xsd:element>
+                        <xsd:any maxOccurs="unbounded" minOccurs="0" namespace="http://www.w3.org/2000/09/xmldsig#" processContents="lax"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+            <xsd:element name="valueName" type="xs:string"/>
+            <xsd:element name="value" type="xs:string"/>
+        </xsd:schema>
+        <xsd:schema elementFormDefault="qualified" targetNamespace="http://gov.fema.ipaws.services/IPAWS_CAPService/" xmlns="http://www.w3.org/2001/XMLSchema" xmlns:CAP="urn:oasis:names:tc:emergency:cap:1.2" xmlns:cap="http://gov.fema.ipaws.services/IPAWS_CAPService/" xmlns:capreq="http://gov.fema.ipaws.services/caprequest" xmlns:capresp="http://gov.fema.ipaws.services/capresponse" xmlns:intf="http://gov.fema.ipaws.services/IPAWS_CAPService/" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+            <xsd:element name="getRequestTypeDef" type="capreq:requestParameterList"/>
+            <xsd:element name="getResponseTypeDef" type="capresp:responseParameterList"/>
+            <xsd:element name="getMessageTypeDef" type="capreq:requestParameterList"/>
+            <xsd:element name="postCAPRequestTypeDef">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element ref="CAP:alert"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+            <xsd:element name="CAPServiceException">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="errorCode" nillable="true" type="xsd:string"/>
+                        <xsd:element name="message" nillable="true" type="xsd:string"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+            <xsd:element name="postCAPResponseTypeDef">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="postCAPReturn" nillable="true" type="xsd:string"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+            <xsd:element name="messageResponseTypeDef">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element maxOccurs="unbounded" minOccurs="0" ref="CAP:alert"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+            <xsd:element name="CAPHeaderTypeDef">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element minOccurs="0" name="logonUser" nillable="true" type="xsd:string"/>
+                        <xsd:element minOccurs="0" name="logonCogId" nillable="true" type="xsd:int"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+        </xsd:schema>
+    </WL5G3N0:types>
+    <WL5G3N0:message name="getRequest">
+        <WL5G3N0:part name="parameters" element="WL5G3N1:getRequestTypeDef"/>
+    </WL5G3N0:message>
+    <WL5G3N0:message name="getResponse">
+        <WL5G3N0:part name="parameters" element="WL5G3N1:getResponseTypeDef"/>
+    </WL5G3N0:message>
+    <WL5G3N0:message name="CAPSoapException">
+        <WL5G3N0:part name="CAPSoapException" element="WL5G3N1:CAPServiceException"/>
+    </WL5G3N0:message>
+    <WL5G3N0:message name="postCAPRequest">
+        <WL5G3N0:part name="parameters" element="WL5G3N1:postCAPRequestTypeDef"/>
+    </WL5G3N0:message>
+    <WL5G3N0:message name="postCAPResponse">
+        <WL5G3N0:part name="parameters" element="WL5G3N1:postCAPResponseTypeDef"/>
+    </WL5G3N0:message>
+    <WL5G3N0:message name="getMessage">
+        <WL5G3N0:part name="parameters" element="WL5G3N1:getMessageTypeDef"/>
+    </WL5G3N0:message>
+    <WL5G3N0:message name="getMessageResponse">
+        <WL5G3N0:part name="parameters" element="WL5G3N1:messageResponseTypeDef"/>
+    </WL5G3N0:message>
+    <WL5G3N0:message name="getRequestHeader">
+        <WL5G3N0:part name="request_Header" element="WL5G3N1:CAPHeaderTypeDef"/>
+    </WL5G3N0:message>
+    <WL5G3N0:portType name="CAPserviceInterface">
+        <WL5G3N0:operation name="getRequest">
+            <WL5G3N0:input name="getRequestInput" message="WL5G3N1:getRequest"/>
+            <WL5G3N0:output name="getResponseOut" message="WL5G3N1:getResponse"/>
+            <WL5G3N0:fault name="CAPSoapException" message="WL5G3N1:CAPSoapException"/>
+        </WL5G3N0:operation>
+        <WL5G3N0:operation name="postCAP">
+            <WL5G3N0:input name="postCAPRequest" message="WL5G3N1:postCAPRequest"/>
+            <WL5G3N0:output name="postCAPResponse" message="WL5G3N1:postCAPResponse"/>
+            <WL5G3N0:fault name="CAPSoapException" message="WL5G3N1:CAPSoapException"/>
+        </WL5G3N0:operation>
+        <WL5G3N0:operation name="getMessage">
+            <WL5G3N0:input name="getMessageInput" message="WL5G3N1:getMessage"/>
+            <WL5G3N0:output name="getMessageOut" message="WL5G3N1:getMessageResponse"/>
+            <WL5G3N0:fault name="CAPSoapException" message="WL5G3N1:CAPSoapException"/>
+        </WL5G3N0:operation>
+    </WL5G3N0:portType>
+    <WL5G3N0:binding name="CAPSoapHttp" type="WL5G3N1:CAPserviceInterface">
+        <WL5G3N2:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+        <WL5G3N0:operation name="getRequest">
+            <WL5G3N2:operation soapAction="http://gov.fema.ipaws.services/IPAWS_CAPService/getRequest"/>
+            <WL5G3N0:input name="getRequestInput">
+                <WL5G3N2:header message="WL5G3N1:getRequestHeader" part="request_Header" use="literal"/>
+                <WL5G3N2:body use="literal" parts="parameters"/>
+            </WL5G3N0:input>
+            <WL5G3N0:output name="getResponseOut">
+                <WL5G3N2:body use="literal"/>
+            </WL5G3N0:output>
+            <WL5G3N0:fault name="CAPSoapException">
+                <WL5G3N2:fault name="CAPSoapException" use="literal"/>
+            </WL5G3N0:fault>
+        </WL5G3N0:operation>
+        <WL5G3N0:operation name="postCAP">
+            <WL5G3N2:operation soapAction="http://gov.fema.ipaws.services/IPAWS_CAPService/postCAP"/>
+            <WL5G3N0:input name="postCAPRequest">
+                <WL5G3N2:header message="WL5G3N1:getRequestHeader" part="request_Header" use="literal"/>
+                <WL5G3N2:body use="literal" parts="parameters"/>
+            </WL5G3N0:input>
+            <WL5G3N0:output name="postCAPResponse">
+                <WL5G3N2:body use="literal"/>
+            </WL5G3N0:output>
+            <WL5G3N0:fault name="CAPSoapException">
+                <WL5G3N2:fault name="CAPSoapException" use="literal"/>
+            </WL5G3N0:fault>
+        </WL5G3N0:operation>
+        <WL5G3N0:operation name="getMessage">
+            <WL5G3N2:operation soapAction="http://gov.fema.ipaws.services/IPAWS_CAPService/getMessage"/>
+            <WL5G3N0:input name="getMessageInput">
+                <WL5G3N2:header message="WL5G3N1:getRequestHeader" part="request_Header" use="literal"/>
+                <WL5G3N2:body use="literal" parts="parameters"/>
+            </WL5G3N0:input>
+            <WL5G3N0:output name="getMessageOut">
+                <WL5G3N2:body use="literal"/>
+            </WL5G3N0:output>
+            <WL5G3N0:fault name="CAPSoapException">
+                <WL5G3N2:fault name="CAPSoapException" use="literal"/>
+            </WL5G3N0:fault>
+        </WL5G3N0:operation>
+    </WL5G3N0:binding>
+    <WL5G3N0:service name="IPAWS">
+        <WL5G3N0:port name="IPAWS" binding="WL5G3N1:CAPSoapHttp">
+            <WL5G3N2:address location="http://vvsoua7.fematdl.net:8210/IPAWS_CAPService/IPAWS"/>
+        </WL5G3N0:port>
+    </WL5G3N0:service>
+</WL5G3N0:definitions>

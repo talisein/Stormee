@@ -1,0 +1,4 @@
+// the configured options and settings for Tutorial
+#define VERSION_MAJOR @CAPViewer_VERSION_MAJOR@
+#define VERSION_MINOR @CAPViewer_VERSION_MINOR@
+#define CAPVIEWER_GLADE_LOCATION @CAPViewer_glade_location@

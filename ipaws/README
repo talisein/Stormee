@@ -1,0 +1,8 @@
+wsdl2h -c IPAWS.wsdl 
+soapcpp2 -I ./import/ IPAWS.h 
+
+
+
+gcc -std=c99 -Wall -DWITH_OPENSSL -DWITH_DOM -lgsoapssl  -lssl -lcrypto  plugin.c main.c soapC.c soapClient.c smdevp.c mecevp.c wsseapi.c threads.c
+
+
