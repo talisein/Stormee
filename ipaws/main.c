@@ -24,11 +24,15 @@ struct soap* init(void) {
   soap_register_plugin(soap, soap_wsse);
 
   fd = fopen("secrets", "r");
-  fgets(passwd, 10, fd);
-  fclose(fd);
-  if (passwd == NULL) {
-    perror("Unable to read password for X509 certificate.\n");
-    exit(EXIT_FAILURE);
+  if (fd) {
+    fgets(passwd, 10, fd);
+    fclose(fd);
+    if (passwd == NULL) {
+      perror("Unable to read password for X509 certificate.\n");
+      exit(EXIT_FAILURE);
+    }
+  } else {
+    perror("Unable to open secrets file.\n");
   }
 
   fd = fopen("DMOPEN_100014_PRIVATE.pem", "r");
