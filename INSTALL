@@ -1,0 +1,9 @@
+Installing from git:
+# git clone git://github.com/talisein/Stormee.git Stormee
+# cd Stormee
+# cmake
+# make
+# make install
+
+The glade file is installed to /usr/local/share/CAPViewer. You'll have
+to fiddle with things if you want it somewhere else..
