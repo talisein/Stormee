@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include <strophe.h>
 #include <openssl/engine.h>
+#include <openssl/pem.h>
+#include <openssl/conf.h>
 #include "soapH.h"
 #include "CAPSoapHttp.nsmap"
 #include "plugin.h"
@@ -99,6 +101,7 @@ struct ns2__requestParameterList* new_reqList(struct soap* soap, char* reqOp, ch
   listItem->parameterValue = soap_malloc(soap, sizeof(char*));
   listItem->parameterValue[0] = paramValue;
   listItem->__sizeparameterValue = 1;
+  listItem->parameterName = paramName;
 
   return reqList;
 }
