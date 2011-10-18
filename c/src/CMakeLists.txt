@@ -1,0 +1,21 @@
+# configure a header file to pass some of the CMake settings
+# to the source code
+configure_file (
+  "config.h.in"
+  "config.h"
+  )
+
+# add the binary tree to the search path for include files
+# so that we will find TutorialConfig.h
+
+# add the executable
+link_directories(
+    ${GTKMM3_LIBRARY_DIRS}  ${XML++_LIBRARY_DIRS} ${GTHREAD_LIBRARY_DIRS} ${WEBKITGTK_LIBRARY_DIRS})
+
+include_directories(
+    ${GTKMM3_INCLUDE_DIRS}  ${XML++_INCLUDE_DIRS} ${GTHREAD_LIBRARY_DIRS} ${WEBKITGTK_INCLUDE_DIRS})
+
+add_executable(CAPViewer main.cxx util.cxx main_window.cxx log.cpp cap.cxx datetime.cxx capreader.cxx)
+
+target_link_libraries(CAPViewer 
+    ${GTKMM3_LIBRARIES} ${XML++_LIBRARIES} ${WEBKITGTK_LIBRARIES})
