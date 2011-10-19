@@ -122,9 +122,11 @@ extern const char *wsse_X509v3URI;
 extern const char *wsse_X509v3SubjectKeyIdentifierURI;
 
 extern const char *ds_sha1URI;
+extern const char *ds_rsa256URI;
 extern const char *ds_hmac_sha1URI;
 extern const char *ds_dsa_sha1URI;
 extern const char *ds_rsa_sha1URI;
+extern const char *ds_rsa_sha256URI;
 
 extern const char *ds_URI;
 extern const char *c14n_URI;

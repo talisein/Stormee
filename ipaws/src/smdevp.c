@@ -301,10 +301,14 @@ soap_smd_size(int alg, const void *key)
     case SOAP_SMD_DGST_SHA1:
     case SOAP_SMD_HMAC_SHA1:
       return SOAP_SMD_SHA1_SIZE;
+    case SOAP_SMD_DGST_SHA256:
+      return SOAP_SMD_SHA256_SIZE;
     case SOAP_SMD_SIGN_DSA_SHA1:
     case SOAP_SMD_SIGN_RSA_SHA1:
+    case SOAP_SMD_SIGN_RSA_SHA256:
     case SOAP_SMD_VRFY_DSA_SHA1:
     case SOAP_SMD_VRFY_RSA_SHA1:
+
       /* OpenSSL EVP_PKEY_size returns size of signatures given a key */
       return EVP_PKEY_size((EVP_PKEY*)key);
   }
@@ -428,6 +432,9 @@ soap_smd_init(struct soap *soap, struct soap_smd_data *data, int alg, const void
     case SOAP_SMD_DGST_SHA1:
       EVP_DigestInit((EVP_MD_CTX*)data->ctx, EVP_sha1());
       break;
+    case SOAP_SMD_DGST_SHA256:
+      EVP_DigestInit((EVP_MD_CTX*)data->ctx, EVP_sha256());
+      break;
     case SOAP_SMD_HMAC_SHA1:
       HMAC_Init((HMAC_CTX*)data->ctx, key, keylen, EVP_sha1());
       break;
@@ -436,6 +443,9 @@ soap_smd_init(struct soap *soap, struct soap_smd_data *data, int alg, const void
       break;
     case SOAP_SMD_SIGN_RSA_SHA1:
       err = EVP_SignInit((EVP_MD_CTX*)data->ctx, EVP_sha1());
+      break;
+    case SOAP_SMD_SIGN_RSA_SHA256:
+      err = EVP_SignInit((EVP_MD_CTX*)data->ctx, EVP_sha256());
       break;
     case SOAP_SMD_VRFY_DSA_SHA1:
       err = EVP_VerifyInit((EVP_MD_CTX*)data->ctx, EVP_dss1());
@@ -464,6 +474,7 @@ soap_smd_update(struct soap *soap, struct soap_smd_data *data, const char *buf, 
   switch (data->alg & (SOAP_SMD_PASSTHRU-1))
   { case SOAP_SMD_DGST_MD5:
     case SOAP_SMD_DGST_SHA1:
+    case SOAP_SMD_DGST_SHA256:
       EVP_DigestUpdate((EVP_MD_CTX*)data->ctx, (const void*)buf, (unsigned int)len);
       break;
     case SOAP_SMD_HMAC_SHA1:
@@ -471,6 +482,7 @@ soap_smd_update(struct soap *soap, struct soap_smd_data *data, const char *buf, 
       break;
     case SOAP_SMD_SIGN_DSA_SHA1:
     case SOAP_SMD_SIGN_RSA_SHA1:
+    case SOAP_SMD_SIGN_RSA_SHA256:
       err = EVP_SignUpdate((EVP_MD_CTX*)data->ctx, (const void*)buf, (unsigned int)len);
       break;
     case SOAP_SMD_VRFY_DSA_SHA1:
@@ -504,6 +516,7 @@ soap_smd_final(struct soap *soap, struct soap_smd_data *data, char *buf, int *le
     switch (data->alg & (SOAP_SMD_PASSTHRU-1))
     { case SOAP_SMD_DGST_MD5:
       case SOAP_SMD_DGST_SHA1:
+      case SOAP_SMD_DGST_SHA256:
         EVP_DigestFinal((EVP_MD_CTX*)data->ctx, (unsigned char*)buf, &n);
         break;
       case SOAP_SMD_HMAC_SHA1:
@@ -511,6 +524,7 @@ soap_smd_final(struct soap *soap, struct soap_smd_data *data, char *buf, int *le
         break;
       case SOAP_SMD_SIGN_DSA_SHA1:
       case SOAP_SMD_SIGN_RSA_SHA1:
+      case SOAP_SMD_SIGN_RSA_SHA256:
         err = EVP_SignFinal((EVP_MD_CTX*)data->ctx, (unsigned char*)buf, &n, (EVP_PKEY*)data->key);
         break;
       case SOAP_SMD_VRFY_DSA_SHA1:

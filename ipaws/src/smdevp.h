@@ -72,6 +72,9 @@ extern "C" {
 /** SHA1 digest size in octets */
 #define SOAP_SMD_SHA1_SIZE	(20)
 
+/** SHA256 digest size in octets */
+#define SOAP_SMD_SHA256_SIZE    (32)
+
 /******************************************************************************\
  *
  * Supported algorithms
@@ -95,7 +98,11 @@ extern "C" {
 #define SOAP_SMD_VRFY_RSA_SHA1	(0x7)
 
 /** Additional flag: msg sends will pass through digest/signature algorithm */
-#define SOAP_SMD_PASSTHRU	(0x8)
+#define SOAP_SMD_PASSTHRU	(0x10)
+
+/** RSA-SHA256 secret key signature algorithm */
+#define SOAP_SMD_SIGN_RSA_SHA256  (0x8)
+#define SOAP_SMD_DGST_SHA256 (0x9)
 
 /**
 @struct soap_smd_data

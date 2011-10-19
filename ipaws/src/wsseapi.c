@@ -1293,10 +1293,11 @@ const char *wsse_X509v3URI = "http://docs.oasis-open.org/wss/2004/01/oasis-20040
 const char *wsse_X509v3SubjectKeyIdentifierURI = "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509SubjectKeyIdentifier";
 
 const char *ds_sha1URI = "http://www.w3.org/2000/09/xmldsig#sha1";
+const char *ds_sha256URI = "http://www.w3.org/2000/09/xmldsig#rsa-sha256";
 const char *ds_hmac_sha1URI = "http://www.w3.org/2000/09/xmldsig#hmac-sha1";
 const char *ds_dsa_sha1URI = "http://www.w3.org/2000/09/xmldsig#dsa-sha1";
 const char *ds_rsa_sha1URI = "http://www.w3.org/2000/09/xmldsig#rsa-sha1";
-
+const char *ds_rsa_sha256URI = "http://www.w3.org/2000/09/xmldsig#rsa-sha256";
 const char *xenc_rsa15URI = "http://www.w3.org/2001/04/xmlenc#rsa-1_5";
 const char *xenc_3desURI = "http://www.w3.org/2001/04/xmlenc#tripledes-cbc";
 
@@ -1317,7 +1318,7 @@ const char *wsu_URI = "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-w
 struct soap_wsse_session
 { struct soap_wsse_session *next;	/**< Next session in list */
   time_t expired;			/**< Session expiration */
-  char hash[SOAP_SMD_SHA1_SIZE];	/**< SHA1 digest */
+  char hash[SOAP_SMD_SHA256_SIZE];	/**< SHA1 digest */
   char nonce[1]; /**< Nonce string flows into region below this struct */
 };
 
@@ -1327,9 +1328,9 @@ static struct soap_wsse_session *soap_wsse_session = NULL;
 /** Lock for digest authentication session database exclusive access */
 static MUTEX_TYPE soap_wsse_session_lock = MUTEX_INITIALIZER;
 
-static int soap_wsse_session_verify(struct soap *soap, const char hash[SOAP_SMD_SHA1_SIZE], const char *created, const char *nonce);
+static int soap_wsse_session_verify(struct soap *soap, const char hash[SOAP_SMD_SHA256_SIZE], const char *created, const char *nonce);
 static void soap_wsse_session_cleanup(struct soap *soap);
-static void calc_digest(struct soap *soap, const char *created, const char *nonce, int noncelen, const char *password, char hash[SOAP_SMD_SHA1_SIZE]);
+static void calc_digest(struct soap *soap, const char *created, const char *nonce, int noncelen, const char *password, char hash[SOAP_SMD_SHA256_SIZE]);
 static void calc_nonce(struct soap *soap, char nonce[SOAP_WSSE_NONCELEN]);
 
 static int soap_wsse_init(struct soap *soap, struct soap_wsse_data *data, const void *(*arg)(struct soap*, int, const char*, int*));
@@ -1610,7 +1611,7 @@ soap_wsse_add_UsernameTokenDigest(struct soap *soap, const char *id, const char 
 { _wsse__Security *security = soap_wsse_add_Security(soap);
   time_t now = time(NULL);
   const char *created = soap_dateTime2s(soap, now);
-  char HA[SOAP_SMD_SHA1_SIZE], HABase64[29];
+  char HA[SOAP_SMD_SHA256_SIZE], HABase64[29];
   char nonce[SOAP_WSSE_NONCELEN], *nonceBase64;
   DBGFUN2("soap_wsse_add_UsernameTokenDigest", "id=%s", id?id:"", "username=%s", username?username:"");
   /* generate a nonce */
@@ -1622,7 +1623,7 @@ soap_wsse_add_UsernameTokenDigest(struct soap *soap, const char *id, const char 
   /*
   calc_digest(soap, created, nonceBase64, strlen(nonceBase64), password, HA);
   */
-  soap_s2base64(soap, (unsigned char*)HA, HABase64, SOAP_SMD_SHA1_SIZE);
+  soap_s2base64(soap, (unsigned char*)HA, HABase64, SOAP_SMD_SHA256_SIZE);
   /* populate the UsernameToken with digest */
   soap_wsse_add_UsernameTokenText(soap, id, username, HABase64);
   /* populate the remainder of the password, nonce, and created */
@@ -1699,7 +1700,7 @@ soap_wsse_verify_Password(struct soap *soap, const char *password)
       if (token->Nonce
        && token->wsu__Created
        && strlen(token->Password->__item) == 28)	/* digest pw len = 28 */
-      { char HA1[SOAP_SMD_SHA1_SIZE], HA2[SOAP_SMD_SHA1_SIZE];
+      { char HA1[SOAP_SMD_SHA256_SIZE], HA2[SOAP_SMD_SHA256_SIZE];
         /* The specs are not clear: compute digest over binary nonce or base64 nonce? The formet appears to be the case: */
         int noncelen;
         const char *nonce = soap_base642s(soap, token->Nonce, NULL, 0, &noncelen);
@@ -1709,9 +1710,9 @@ soap_wsse_verify_Password(struct soap *soap, const char *password)
         calc_digest(soap, token->wsu__Created, token->Nonce, strlen(token->Nonce), password, HA1);
         */
         /* get HA2 = supplied digest from base64 Password */
-        soap_base642s(soap, token->Password->__item, HA2, SOAP_SMD_SHA1_SIZE, NULL);
+        soap_base642s(soap, token->Password->__item, HA2, SOAP_SMD_SHA256_SIZE, NULL);
         /* compare HA1 to HA2 */
-        if (!memcmp(HA1, HA2, SOAP_SMD_SHA1_SIZE))
+        if (!memcmp(HA1, HA2, SOAP_SMD_SHA256_SIZE))
         { /* authorize if HA1 and HA2 identical and not replay attack */
           if (!soap_wsse_session_verify(soap, HA1, token->wsu__Created, token->Nonce))
             return SOAP_OK;
@@ -2042,9 +2043,10 @@ soap_wsse_add_SignedInfo_Reference(struct soap *soap, const char *URI, const cha
     return soap->error = SOAP_EOM;
   soap_default_ds__DigestMethodType(soap, reference->DigestMethod);
   /* the DigestMethod algorithm is always SHA1 */
-  reference->DigestMethod->Algorithm = (char*)ds_sha1URI;
+  /* changed to SHA256! */
+  reference->DigestMethod->Algorithm = (char*)ds_sha256URI;
   /* populate the DigestValue element */
-  reference->DigestValue = soap_s2base64(soap, (unsigned char*)HA, NULL, SOAP_SMD_SHA1_SIZE);
+  reference->DigestValue = soap_s2base64(soap, (unsigned char*)HA, NULL, SOAP_SMD_SHA256_SIZE);
   if (!reference->DigestValue)
     return soap->error;
   /* add the fresh new reference to the array */
@@ -2173,6 +2175,9 @@ soap_wsse_add_SignatureValue(struct soap *soap, int alg, const void *key, int ke
       break;
     case SOAP_SMD_SIGN_RSA_SHA1:
       method = ds_rsa_sha1URI;
+      break;
+    case SOAP_SMD_SIGN_RSA_SHA256:
+      method = ds_rsa_sha256URI;
       break;
     default:
       return soap_wsse_fault(soap, wsse__UnsupportedAlgorithm, NULL);
@@ -2392,7 +2397,9 @@ soap_wsse_verify_SignedInfo(struct soap *soap)
         /* digest algorithm should be SHA1 */
         if (!strcmp(reference->DigestMethod->Algorithm, ds_sha1URI))
           alg = SOAP_SMD_DGST_SHA1;
-        else
+        else if (!strcmp(reference->DigestMethod->Algorithm, ds_sha256URI))
+	  alg = SOAP_SMD_DGST_SHA256;
+	else
           return soap_wsse_fault(soap, wsse__UnsupportedAlgorithm, reference->DigestMethod->Algorithm);
         /* if reference has a transform, it should be an exc-c14n transform */
         if (reference->Transforms)
@@ -2450,7 +2457,7 @@ soap_wsse_verify_digest(struct soap *soap, int alg, int canonical, const char *i
     }
   }
   if (dom)
-  { unsigned char HA[SOAP_SMD_SHA1_SIZE];
+  { unsigned char HA[SOAP_SMD_SHA256_SIZE];
     int len, err = SOAP_OK;
     DBGLOG(TEST, SOAP_MESSAGE(fdebug, "Computing digest for Id=%s\n", id));
     /* do not hash leading whitespace */
@@ -3218,7 +3225,7 @@ soap_wsse_fault(struct soap *soap, wsse__FaultcodeEnum fault, const char *detail
 @return SOAP_OK or SOAP_FAULT
 */
 static int
-soap_wsse_session_verify(struct soap *soap, const char hash[SOAP_SMD_SHA1_SIZE], const char *created, const char *nonce)
+soap_wsse_session_verify(struct soap *soap, const char hash[SOAP_SMD_SHA256_SIZE], const char *created, const char *nonce)
 { struct soap_wsse_session *session;
   time_t expired, now = time(NULL);
   DBGFUN("soap_wsse_session_verify");
@@ -3237,7 +3244,7 @@ soap_wsse_session_verify(struct soap *soap, const char hash[SOAP_SMD_SHA1_SIZE],
   /* enter mutex to check and update session */
   MUTEX_LOCK(soap_wsse_session_lock);
   for (session = soap_wsse_session; session; session = session->next)
-  { if (!memcmp(session->hash, hash, SOAP_SMD_SHA1_SIZE) && !strcmp(session->nonce, nonce))
+  { if (!memcmp(session->hash, hash, SOAP_SMD_SHA256_SIZE) && !strcmp(session->nonce, nonce))
       break;
   }
   /* if not found, allocate new session data */
@@ -3246,7 +3253,7 @@ soap_wsse_session_verify(struct soap *soap, const char hash[SOAP_SMD_SHA1_SIZE],
     if (session)
     { session->next = soap_wsse_session;
       session->expired = expired;
-      memcpy(session->hash, hash, SOAP_SMD_SHA1_SIZE);
+      memcpy(session->hash, hash, SOAP_SMD_SHA256_SIZE);
       strcpy(session->nonce, nonce);
       soap_wsse_session = session;
     }
@@ -3304,10 +3311,12 @@ soap_wsse_session_cleanup(struct soap *soap)
 @param[out] hash SHA1 digest
 */
 static void
-calc_digest(struct soap *soap, const char *created, const char *nonce, int noncelen, const char *password, char hash[SOAP_SMD_SHA1_SIZE])
+calc_digest(struct soap *soap, const char *created, const char *nonce, int noncelen, const char *password, char hash[SOAP_SMD_SHA256_SIZE])
 { struct soap_smd_data context;
   /* use smdevp engine */
-  soap_smd_init(soap, &context, SOAP_SMD_DGST_SHA1, NULL, 0);
+  //  soap_smd_init(soap, &context, SOAP_SMD_DGST_SHA1, NULL, 0);
+  /* Note that the size of hash above was also changed */
+  soap_smd_init(soap, &context, SOAP_SMD_DGST_SHA256, NULL, 0);
   soap_smd_update(soap, &context, nonce, noncelen);
   soap_smd_update(soap, &context, created, strlen(created));
   soap_smd_update(soap, &context, password, strlen(password));
@@ -4202,7 +4211,8 @@ soap_wsse_preparesend(struct soap *soap, const char *buf, size_t len)
         digest = (struct soap_wsse_digest*)SOAP_MALLOC(soap, sizeof(struct soap_wsse_digest) + strlen(soap->id) + 1);
         digest->next = data->digest;
         digest->level = soap->level;
-        soap_smd_init(soap, &digest->smd, SOAP_SMD_DGST_SHA1, NULL, 0);
+	//        soap_smd_init(soap, &digest->smd, SOAP_SMD_DGST_SHA1, NULL, 0);
+        soap_smd_init(soap, &digest->smd, SOAP_SMD_DGST_SHA256, NULL, 0);
         memset(digest->hash, 0, sizeof(digest->hash));
         digest->id[0] = '#';
         strcpy(digest->id + 1, soap->id);
