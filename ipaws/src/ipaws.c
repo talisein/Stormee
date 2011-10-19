@@ -9,7 +9,7 @@ void addSecurity(struct soap* soap) {
   int* CogId;
 
   soap_wsse_add_Security(soap);
-  if (soap_wsse_sign_body(soap, SOAP_SMD_SIGN_RSA_SHA1, rsa_private_key, 0)) {
+  if (soap_wsse_sign_body(soap, SOAP_SMD_SIGN_RSA_SHA256, rsa_private_key, 0)) {
     printf("Error signing body\n");
     exit(EXIT_FAILURE);
   }
