@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include "ipaws.h"
 #include "wsseapi.h"
 
@@ -117,6 +118,36 @@ struct ns3__responseParameterList* getMessageList(struct soap* soap, char* date)
   return getRequest(soap, new_reqList(soap, "getMessageListAll", "sent", "greaterthan", date));
 }
 
-struct _ns1__messageResponseTypeDef* getMessages(struct soap* soap, char* date) {
-  return getMessage(soap, new_reqList(soap, "getMessageAll", "sent", "greaterthan", date));
+char* getMessages(struct soap* soap, char* date) {
+   struct _ns1__messageResponseTypeDef* msgs = getMessage(soap, new_reqList(soap, "getMessageAll", "sent", "greaterthan", date));
+
+   if (msgs) {
+     int old_fd = soap->sendfd;
+     FILE* tmpf = tmpfile();
+     char* buf;
+     long len;
+
+     soap->sendfd = fileno(tmpf);
+     soap_set_omode(soap, SOAP_ENC_XML);
+     soap_write__ns1__messageResponseTypeDef(soap, msgs);
+     soap_clr_omode(soap, SOAP_ENC_XML);
+     soap->sendfd = old_fd;
+
+     fseek(tmpf, 0, SEEK_END);
+     len = ftell(tmpf);
+     buf = malloc(len+1);
+     if (buf) {
+       rewind(tmpf);
+       fread(buf, len, 1, tmpf);
+       buf[len] = '\0';
+       fclose(tmpf);
+       return buf;
+     } else {
+       perror("Unable to convert alerts to text");
+       return NULL;
+     }
+   } else {
+     perror("Error retreiving alerts");
+     return NULL;
+   }
 }
