@@ -28,10 +28,11 @@ find_package(PkgConfig)
 #pkg_check_modules(GTHREAD gthread-2.0 REQUIRED)
 pkg_check_modules(GSOAP gsoapssl REQUIRED)
 pkg_check_modules(STROPHE libstrophe REQUIRED)
+pkg_check_modules(GLIB glib-2.0 REQUIRED)
 
 set(CMAKE_BUILD_TYPE debug)
 set(CMAKE_C_FLAGS_DEBUG "-ggdb -Os")
 
-add_definitions(-DWITH_OPENSSL -DWITH_DOM -Wall -Wextra -pedantic -std=c99)
+add_definitions(-D_POSIX_C_SOURCE=200809L -DWITH_OPENSSL -DWITH_DOM -Wall -Wextra -pedantic -std=c99)
 
 add_subdirectory (src)
