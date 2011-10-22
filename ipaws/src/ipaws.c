@@ -121,41 +121,81 @@ struct ns3__responseParameterList* getMessageList(struct soap* soap, char* date)
   return getRequest(soap, new_reqList(soap, "getMessageListAll", "sent", "greaterthan", date));
 }
 
-char* getMessages(struct soap* soap, char* date) {
+
+
+messages_t* getMessages(struct soap* soap, char* date) {
    struct _ns1__messageResponseTypeDef* msgs = getMessage(soap, new_reqList(soap, "getMessageAll", "sent", "greaterthan", date));
 
    if (msgs) {
      int old_fd = soap->sendfd;
-     FILE* tmpf = tmpfile();
-     char* buf;
-     long len;
-     struct stat stbuf;
+     messages_t* msg_t = NULL;
 
-     soap->sendfd = fileno(tmpf);
-     soap_set_omode(soap, SOAP_ENC_XML);
+     msg_t = (messages_t*) malloc(sizeof(messages_t));
+     if (!msg_t) {
+       perror("Error converting alerts to text. Out of memory [0]");
+       return NULL;
+     }
+
+     msg_t->size = msgs->__sizealert;
+     msg_t->alerts = (char**) malloc(sizeof(char*)*(msg_t->size));
+     if (!msg_t->alerts) {
+       perror("Error converting alerts to text. Out of memory [1]");
+       free(msg_t);
+       return NULL;
+     } 
+
+     for (unsigned int i = 0; i < msg_t->size; i++) {
+       msg_t->alerts[i] = NULL;
+     }
+
      for (int i = 0; i < msgs->__sizealert; i++) {
-       soap_write__ns4__alert(soap, &(msgs->ns4__alert[i]));
-     }
-     soap_clr_omode(soap, SOAP_ENC_XML);
-     soap->sendfd = old_fd;
+       FILE* tmpf = tmpfile();
+       struct stat stbuf;
 
-     if ( fstat(fileno(tmpf), &stbuf) == -1 ) {
-       perror("Error converting alerts to text [1]");
-       return NULL;
-     }
+       soap->sendfd = fileno(tmpf);
+       soap_set_omode(soap, SOAP_ENC_XML);
+       soap_begin_send(soap);
+       soap_serialize__ns4__alert(soap, &(msgs->ns4__alert[i]));
+       soap_put__ns4__alert(soap, &(msgs->ns4__alert[i]), NULL, NULL);
+       soap_end_send(soap);
+       soap_clr_omode(soap, SOAP_ENC_XML);
+       soap->sendfd = old_fd;
 
-     len = stbuf.st_size;
-     buf = (char*) malloc(len+1);
-     if (buf) {
-       rewind(tmpf);
-       fread(buf, len, 1, tmpf);
-       buf[len] = '\0';
+       if ( fstat(fileno(tmpf), &stbuf) == -1 ) {
+	 perror("Encountered error converting alert to text");
+	 goto error_inconsistent_msg_t;
+       }
+
+       msg_t->alerts[i] = (char*) malloc(stbuf.st_size+1);
+       if (msg_t->alerts[i]) {
+	 rewind(tmpf);
+	 if (fread(msg_t->alerts[i], stbuf.st_size, 1, tmpf) < 1) {
+	   perror("Incomplete conversion of alert to text. Discarding");
+	   free(msg_t->alerts[i]);
+	   goto error_inconsistent_msg_t;
+	 }
+	 msg_t->alerts[i][stbuf.st_size] = '\0';
+	 fclose(tmpf);
+       } else {
+	 perror("Ran out of memory converting alert to text");
+	 goto error_inconsistent_msg_t;
+       }
+
+       continue;
+     error_inconsistent_msg_t:
        fclose(tmpf);
-       return buf;
-     } else {
-       perror("Unable to convert alerts to text [2]");
-       return NULL;
+       if ( i > 0 ) {
+	 msg_t->size = i;
+	 return msg_t;
+       } else {
+	 perror("Unable to convert alerts to text [2]");
+	 free(msg_t->alerts);
+	 free(msg_t);
+	 return NULL;
+       }
      }
+
+     return msg_t;
    } else {
      perror("Error retreiving alerts");
      return NULL;
