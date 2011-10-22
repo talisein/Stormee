@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -143,9 +144,17 @@ messages_t* getMessages(struct soap* soap, char* date) {
        free(msg_t);
        return NULL;
      } 
+     msg_t->ids = (char**) malloc(sizeof(char*)*(msg_t->size));
+     if (!msg_t->ids) {
+       perror("Error converting alerts to text. Out of memory [1]");
+       free(msg_t->alerts);
+       free(msg_t);
+       return NULL;
+     }
 
      for (unsigned int i = 0; i < msg_t->size; i++) {
        msg_t->alerts[i] = NULL;
+       msg_t->ids[i] = NULL;
      }
 
      for (int i = 0; i < msgs->__sizealert; i++) {
@@ -176,6 +185,12 @@ messages_t* getMessages(struct soap* soap, char* date) {
 	 }
 	 msg_t->alerts[i][stbuf.st_size] = '\0';
 	 fclose(tmpf);
+	 msg_t->ids[i] = strdup(msgs->ns4__alert[i].identifier);
+	 if (!msg_t->ids[i]) {
+	   perror("Incomplete conversion of alert to text, discarding");
+	   free(msg_t->alerts[i]);
+	   goto error_inconsistent_msg_t;
+	 }
        } else {
 	 perror("Ran out of memory converting alert to text");
 	 goto error_inconsistent_msg_t;
@@ -189,6 +204,7 @@ messages_t* getMessages(struct soap* soap, char* date) {
 	 return msg_t;
        } else {
 	 perror("Unable to convert alerts to text [2]");
+	 free(msg_t->ids);
 	 free(msg_t->alerts);
 	 free(msg_t);
 	 return NULL;
