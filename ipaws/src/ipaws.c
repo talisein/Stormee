@@ -1,4 +1,7 @@
 #include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include "ipaws.h"
 #include "wsseapi.h"
 
@@ -126,16 +129,23 @@ char* getMessages(struct soap* soap, char* date) {
      FILE* tmpf = tmpfile();
      char* buf;
      long len;
+     struct stat stbuf;
 
      soap->sendfd = fileno(tmpf);
      soap_set_omode(soap, SOAP_ENC_XML);
-     soap_write__ns1__messageResponseTypeDef(soap, msgs);
+     for (int i = 0; i < msgs->__sizealert; i++) {
+       soap_write__ns4__alert(soap, &(msgs->ns4__alert[i]));
+     }
      soap_clr_omode(soap, SOAP_ENC_XML);
      soap->sendfd = old_fd;
 
-     fseek(tmpf, 0, SEEK_END);
-     len = ftell(tmpf);
-     buf = malloc(len+1);
+     if ( fstat(fileno(tmpf), &stbuf) == -1 ) {
+       perror("Error converting alerts to text [1]");
+       return NULL;
+     }
+
+     len = stbuf.st_size;
+     buf = (char*) malloc(len+1);
      if (buf) {
        rewind(tmpf);
        fread(buf, len, 1, tmpf);
@@ -143,7 +153,7 @@ char* getMessages(struct soap* soap, char* date) {
        fclose(tmpf);
        return buf;
      } else {
-       perror("Unable to convert alerts to text");
+       perror("Unable to convert alerts to text [2]");
        return NULL;
      }
    } else {
