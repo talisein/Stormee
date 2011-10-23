@@ -2,9 +2,9 @@
 #include <gtkmm/window.h>
 #include <glibmm/dispatcher.h>
 #include "config.h"
-#include "util.h"
-#include "main_window.h"
-#include "log.hpp"
+#include "util.hxx"
+#include "main_window.hxx"
+#include "log.hxx"
 #include <iostream>
 #include <libintl.h>
 #include "cap.hxx"

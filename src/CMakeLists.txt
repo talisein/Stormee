@@ -15,7 +15,7 @@ link_directories(
 include_directories(
     ${GTKMM3_INCLUDE_DIRS}  ${XML++_INCLUDE_DIRS} ${GTHREAD_LIBRARY_DIRS} ${WEBKITGTK_INCLUDE_DIRS})
 
-add_executable(CAPViewer main.cxx util.cxx main_window.cxx log.cpp cap.cxx datetime.cxx capreader.cxx)
+add_executable(CAPViewer main.cxx util.cxx main_window.cxx log.cxx cap.cxx datetime.cxx capreader.cxx)
 
 target_link_libraries(CAPViewer 
     ${GTKMM3_LIBRARIES} ${XML++_LIBRARIES} ${WEBKITGTK_LIBRARIES})

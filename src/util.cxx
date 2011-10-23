@@ -1,4 +1,4 @@
-#include "util.h"
+#include "util.hxx"
 #include "config.h"
 #include <cstdlib>
 #include <iostream>

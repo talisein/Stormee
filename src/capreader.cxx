@@ -2,7 +2,7 @@
 #include <glibmm/convert.h>
 #include <glib.h>
 #include "capreader.hxx"
-#include "util.h"
+#include "util.hxx"
 
 CAPViewer::CAPReader::CAPReader() : inEventCode(false), inParameter(false), inGeocode(false) {
 }

@@ -4,8 +4,8 @@
 #include <gtkmm/linkbutton.h>
 #include <gtkmm.h>
 #include <webkit/webkitwebview.h>
-#include "main_window.h"
-#include "util.h"
+#include "main_window.hxx"
+#include "util.hxx"
 #include "capreader.hxx"
 
 // Test

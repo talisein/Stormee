@@ -1,7 +1,7 @@
 #include "cap.hxx"
 #include "datetime.hxx"
-#include "log.hpp"
-#include "util.h"
+#include "log.hxx"
+#include "util.hxx"
 #include <libintl.h>
 #define _(String) gettext (String)
 

@@ -1,4 +1,4 @@
-#include "log.hpp"
+#include "log.hxx"
 #include <glibmm/thread.h>
 #include <iostream>
 
