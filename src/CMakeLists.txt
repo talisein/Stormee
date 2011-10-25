@@ -10,12 +10,12 @@ configure_file (
 
 # add the executable
 link_directories(
-    ${GTKMM3_LIBRARY_DIRS}  ${XML++_LIBRARY_DIRS} ${GTHREAD_LIBRARY_DIRS} ${WEBKITGTK_LIBRARY_DIRS})
+    ${GTKMM3_LIBRARY_DIRS} ${XML++_LIBRARY_DIRS} ${GTHREAD_LIBRARY_DIRS} ${WEBKITGTK_LIBRARY_DIRS} ${STROPHE_LIBRARY_DIRS})
 
 include_directories(
-    ${GTKMM3_INCLUDE_DIRS}  ${XML++_INCLUDE_DIRS} ${GTHREAD_LIBRARY_DIRS} ${WEBKITGTK_INCLUDE_DIRS})
+    ${GTKMM3_INCLUDE_DIRS}  ${XML++_INCLUDE_DIRS} ${GTHREAD_LIBRARY_DIRS} ${WEBKITGTK_INCLUDE_DIRS} ${STROPHE_INCLUDE_DIRS})
 
-add_executable(CAPViewer main.cxx util.cxx main_window.cxx log.cxx cap.cxx datetime.cxx capreader.cxx)
+add_executable(stormee main.cxx util.cxx main_window.cxx log.cxx cap.cxx datetime.cxx capreader.cxx xmpp.cxx)
 
-target_link_libraries(CAPViewer 
-    ${GTKMM3_LIBRARIES} ${XML++_LIBRARIES} ${WEBKITGTK_LIBRARIES})
+target_link_libraries(stormee 
+    ${GTKMM3_LIBRARIES} ${XML++_LIBRARIES} ${WEBKITGTK_LIBRARIES} ${STROPHE_LIBRARIES})

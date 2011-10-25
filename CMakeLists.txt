@@ -29,6 +29,7 @@ pkg_check_modules(WEBKITGTK webkitgtk-3.0 REQUIRED)
 pkg_check_modules(GTKMM3 gtkmm-3.0 REQUIRED)
 pkg_check_modules(XML++ libxml++-2.6 REQUIRED)
 pkg_check_modules(GTHREAD gthread-2.0 REQUIRED)
+pkg_check_modules(STROPHE libstrophe REQUIRED)
 
 set(CMAKE_BUILD_TYPE debug)
 set(CMAKE_CXX_FLAGS_DEBUG "-ggdb -O0")
