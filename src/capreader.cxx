@@ -14,12 +14,21 @@ CAPViewer::CAPReader::~CAPReader() {
 CAPViewer::CAPReaderFile::~CAPReaderFile() {
 }
 
-CAPViewer::CAPReaderFile::CAPReaderFile(const Glib::RefPtr<const Gio::File>& f) : CAPViewer::CAPReader(), file(f) {
+CAPViewer::CAPReaderBuffer::~CAPReaderBuffer() {
+}
 
+CAPViewer::CAPReaderFile::CAPReaderFile(const Glib::RefPtr<const Gio::File>& f) : CAPViewer::CAPReader(), file(f) {
+}
+
+CAPViewer::CAPReaderBuffer::CAPReaderBuffer(char* buf, size_t buflen) : CAPViewer::CAPReader(), m_string(buf, buflen) {
 }
 
 void CAPViewer::CAPReaderFile::do_parse() {
   parse_file(file->get_uri());
+}
+
+void CAPViewer::CAPReaderBuffer::do_parse() {
+  parse_memory(m_string);
 }
 
 void CAPViewer::CAPReader::on_start_document() {
@@ -36,7 +45,6 @@ void CAPViewer::CAPReader::on_start_element(const Glib::ustring& name,
   if (name.find("alert") != Glib::ustring::npos) {
     cap = std::shared_ptr<CAPViewer::CAP>(new CAPViewer::CAP());
     node = nAlert;
-    g_message("Starting a new alert!");
     for (auto attr : attributes) {
       if (attr.name.find("xmlns") != Glib::ustring::npos)
 	cap->setVersion(attr.value);
@@ -146,7 +154,7 @@ void CAPViewer::CAPReader::on_start_element(const Glib::ustring& name,
   } else if (name.find("source") != Glib::ustring::npos) {
     node = nSource;
   } else {
-    g_message("Unknown CAP field '%s'", name.c_str());
+    g_debug("Unknown CAP field '%s'", name.c_str());
   }
 }
 
@@ -290,7 +298,6 @@ void CAPViewer::CAPReader::on_end_element(const Glib::ustring& name) {
 
   if (name.find("alert") != Glib::ustring::npos) {
     caps.push_back(cap);
-    g_message("Pushed a full <alert>!");
   } else if (name.find("info") != Glib::ustring::npos) {
     cap->addInfo(*info);
   } else if (name.find("area") != Glib::ustring::npos) {

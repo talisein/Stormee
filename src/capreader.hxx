@@ -52,4 +52,14 @@ namespace CAPViewer {
   private:
     Glib::RefPtr<const Gio::File> file;
   };
+
+  class CAPReaderBuffer : public CAPReader {
+  public:
+    explicit CAPReaderBuffer(char* buf, size_t buflen);
+    ~CAPReaderBuffer();
+    void do_parse();
+
+  private:
+    std::string m_string;
+  };
 }
