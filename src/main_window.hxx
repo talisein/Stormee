@@ -1,6 +1,3 @@
-#ifndef MAIN_WINDOW_H
-#define MAIN_WINDOW_H
-
 #include <set>
 #include <queue>
 #include <gtkmm/window.h>
@@ -18,31 +15,16 @@
 #include <giomm/file.h>
 
 #include "cap.hxx"
+#include "xmpp.hxx"
 
 namespace CAPViewer {
   
-  class KeyTable : public Gtk::Grid {
-  public:
-    KeyTable(BaseObjectType* cobject, const Glib::RefPtr<Gtk::Builder>& refGlade);
-    ~KeyTable();
-
-    void add(const Glib::ustring& key, const Glib::ustring& value, const Glib::ustring& keyTooltip, const Glib::ustring& valueTooltip, const Glib::ustring& url);
-    void add(const Glib::ustring& key, const Glib::ustring& value, const Glib::ustring& keyTooltip, const Glib::ustring& valueTooltip);
-    void add(const Glib::ustring& key, const Glib::ustring& value, const Glib::ustring& keyTooltip) {add(key, value, keyTooltip, "");};
-    void add(const Glib::ustring& key, const Glib::ustring& value) {add(key, value, "", "");};
-    void clear();
-
-  private:
-    int rows;
-    int columns;
-    void add_widget(const Glib::ustring&, Gtk::Widget* const, const Glib::ustring&, const Glib::ustring&);
-  };
-
-
   class Window : public Gtk::Window {
   public:
     Window(BaseObjectType* cobject, const Glib::RefPtr<Gtk::Builder>& refGlade);
     ~Window();
+    
+    void accept_caps(const std::vector<std::shared_ptr<CAPViewer::CAP>>&);
 
   protected:
     void on_button_quit();
@@ -89,6 +71,10 @@ namespace CAPViewer {
     void addKeyValueChild(const Gtk::TreeNodeChildren&, const Glib::ustring&, const Glib::ustring&, const Glib::ustring& keyTooltip = "", const Glib::ustring& valueTooltip = "");
     bool m_query_tooltip(int x, int y, bool keyboard_tooltip, const Glib::RefPtr<Gtk::Tooltip>& tooltip);
 
+    std::shared_ptr<CAPViewer::XmppClient> xmppClient;
+    Glib::Thread* xmppThreadPtr;
+    sigc::connection xmppConnection;
+
     std::set<CAPViewer::CAP> seen_caps;
     std::queue<CAPViewer::CAP> queue_cap;
     Glib::Mutex mutex;
@@ -115,4 +101,4 @@ namespace CAPViewer {
 
 
 
-#endif
+

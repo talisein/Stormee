@@ -8,63 +8,6 @@
 #include "util.hxx"
 #include "capreader.hxx"
 
-// Test
-CAPViewer::KeyTable::KeyTable(BaseObjectType* cobject, const Glib::RefPtr<Gtk::Builder>&) : Gtk::Grid(cobject), rows(1), columns(2)
-{
-  Gtk::Label *label = manage(new Gtk::Label("No CAP file loaded.", 0.0, 0.5));
-  attach(*label, 0, 0, 1, 1);
-
-  set_row_homogeneous(false);
-  set_column_homogeneous(false);
-  set_row_spacing(4);
-  show_all();
-}
-
-CAPViewer::KeyTable::~KeyTable() {
-}
-
-void CAPViewer::KeyTable::add(const Glib::ustring& key, const Glib::ustring& value, const Glib::ustring& keyTooltip, const Glib::ustring& valueTooltip, const Glib::ustring& url)
-{
-  Gtk::LinkButton *valueTag = manage(new Gtk::LinkButton(url, value));
-
-  valueTag->set_relief(Gtk::RELIEF_NONE);
-  valueTag->set_label(value);
-  
-  add_widget(key, valueTag, keyTooltip, valueTooltip);
-}
-
-void CAPViewer::KeyTable::add(const Glib::ustring& key, const Glib::ustring& value, const Glib::ustring& keyTooltip, const Glib::ustring& valueTooltip)
-{
-  Gtk::Label *valueTag = manage(new Gtk::Label(value, 0.0, 0.5));
-
-  valueTag->set_single_line_mode(true);
-  valueTag->set_ellipsize(Pango::EllipsizeMode::ELLIPSIZE_END);
-
-  add_widget(key, valueTag, keyTooltip, valueTooltip);
-}
-
-void CAPViewer::KeyTable::clear() {
-  for ( auto pWidget : get_children() ) {
-    remove(*pWidget);
-    delete pWidget;
-  }
-}
-
-void CAPViewer::KeyTable::add_widget(const Glib::ustring& key, Gtk::Widget* const valueTag, const Glib::ustring& keyTooltip, const Glib::ustring& valueTooltip) {
-  Gtk::Label *keyTag = manage(new Gtk::Label(key, 0.0, 0.5));
-
-  keyTag->set_single_line_mode(true);
-  keyTag->set_tooltip_text(keyTooltip);
-  valueTag->set_tooltip_text(valueTooltip);
-  valueTag->set_sensitive(true);
-
-  rows += 1;
-  attach(*keyTag, 0, rows-1, 1, 1);
-  attach(*valueTag, 1, rows-1, 1, 1);
-  show_all();
-}
-
-
 CAPViewer::Window::Window(BaseObjectType* cobject, const Glib::RefPtr<Gtk::Builder>& refBuilder) : Gtk::Window(cobject)
 {
 
@@ -126,6 +69,11 @@ CAPViewer::Window::Window(BaseObjectType* cobject, const Glib::RefPtr<Gtk::Build
   tagtable->add(leftMonoTag);
 
   show_all_children();
+
+  xmppClient = std::shared_ptr<CAPViewer::XmppClient>(new CAPViewer::XmppClient());
+  xmppConnection = xmppClient->signal_cap.connect(sigc::mem_fun(*this, &CAPViewer::Window::accept_caps));
+
+  xmppThreadPtr = Glib::Thread::create(sigc::mem_fun(*xmppClient, &CAPViewer::XmppClient::run), true);
 }
 
 bool CAPViewer::Window::m_query_tooltip(int x, int y, bool, const Glib::RefPtr<Gtk::Tooltip>& tooltip) {
@@ -309,6 +257,11 @@ void CAPViewer::Window::addKeyValueChild(const Gtk::TreeNodeChildren& parent, co
 }
 
 CAPViewer::Window::~Window() {
+  // TODO: We are assuming that die() is thread safe. >_>
+  xmppClient->die();
+  xmppThreadPtr->join();
+  xmppConnection.disconnect();
+  xmppClient.reset();
 }
 
 void CAPViewer::Window::on_button_quit() {
@@ -336,6 +289,15 @@ void CAPViewer::Window::consume_cap() {
     }
   }
 }
+
+void CAPViewer::Window::accept_caps(const std::vector<std::shared_ptr<CAPViewer::CAP>> &caps) {
+  for (auto capptr : caps) {
+    Glib::Mutex::Lock lock(mutex);
+    queue_cap.push(*capptr);
+  }
+
+  signal_cap();
+} 
 
 void CAPViewer::Window::produce_cap_from_file(Glib::RefPtr<Gio::File> fptr) {
   CAPViewer::CAPReaderFile reader(fptr);
