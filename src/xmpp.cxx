@@ -2,23 +2,14 @@
 #include "xmpp.hxx"
 #include "capreader.hxx"
 
-CAPViewer::XmppClient::XmppClient() {
+CAPViewer::XmppClient::XmppClient() : log(xmpp_get_default_logger(XMPP_LEVEL_DEBUG)), ctx(xmpp_ctx_new(NULL, NULL)), conn(xmpp_conn_new(ctx)), m_MsgHandler(ctx, &signal_cap), m_ConnHandler(ctx, &m_MsgHandler) {
   init();
-
 }
 
 void CAPViewer::XmppClient::init() {
   
   xmpp_initialize();
   
-  /* create a context */
-  // XMPP_LEVEL_DEBUG
-  //  log = xmpp_get_default_logger(NULL); /* pass NULL instead to silence output */
-  ctx = xmpp_ctx_new(NULL, NULL);
-
-  /* create a connection */
-  conn = xmpp_conn_new(ctx);
-
   /* setup authentication information */
   xmpp_conn_set_jid(conn, "xmpp.stormee.org");
 
@@ -32,9 +23,6 @@ CAPViewer::XmppClient::~XmppClient() {
   xmpp_shutdown();
   g_message("xmpp_shutdown()");
 }
-
-
-sigc::signal<void, std::vector<std::shared_ptr<CAPViewer::CAP>>> CAPViewer::XmppClient::signal_cap;
 
 static void doSubscribe(xmpp_conn_t * conn, xmpp_ctx_t * ctx) {
   xmpp_stanza_t *iq, *pubsub, *subscribe;
@@ -64,10 +52,15 @@ static void doSubscribe(xmpp_conn_t * conn, xmpp_ctx_t * ctx) {
   xmpp_stanza_release(iq);
 }
 
-int CAPViewer::XmppClient::message_handler(xmpp_conn_t * const conn __attribute__((unused)), xmpp_stanza_t * const stanza, void * const userdata)
+extern "C" int MessageHandlerFunctorInC(xmpp_conn_t * const conn __attribute__((unused)), xmpp_stanza_t * const stanza, void * const userdata) {
+  CAPViewer::MessageHandlerFunctor* my_functor = (CAPViewer::MessageHandlerFunctor*) userdata;
+  return my_functor->operator()(conn, stanza);
+}
+
+int CAPViewer::MessageHandlerFunctor::operator()(xmpp_conn_t * const conn __attribute__((unused)), xmpp_stanza_t * const stanza)
 {
   xmpp_stanza_t *event, *items, *item, *alert;
-  xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata;
+
   char* buf;
   size_t buflen;
 
@@ -91,36 +84,46 @@ int CAPViewer::XmppClient::message_handler(xmpp_conn_t * const conn __attribute_
   std::shared_ptr<CAPViewer::CAPReaderBuffer> reader = std::shared_ptr<CAPViewer::CAPReaderBuffer>(new CAPViewer::CAPReaderBuffer(buf, buflen));
   reader->do_parse();
   
-  CAPViewer::XmppClient::signal_cap(reader->getCAPs());
-  xmpp_free(ctx, buf);
+  m_signal_ptr->operator()(reader->getCAPs());
+  xmpp_free(m_ctx, buf);
 
   return 1;
 }
 
-void CAPViewer::XmppClient::conn_handler(xmpp_conn_t * const conn __attribute__((unused)), 
-		  const xmpp_conn_event_t status, 
-		  const int error __attribute__((unused)), 
-		  xmpp_stream_error_t * const stream_error __attribute__((unused)),
-		  void * const userdata ) {
-  xmpp_ctx_t *ctx = (xmpp_ctx_t *)userdata;
+extern "C" void ConnectionHandlerFunctorInC(
+	    xmpp_conn_t * const conn,
+	    const xmpp_conn_event_t status, 
+	    const int error,
+	    xmpp_stream_error_t * const stream_error,
+	    void* userdata) {
+  CAPViewer::ConnectionHandlerFunctor* my_functor = (CAPViewer::ConnectionHandlerFunctor*) userdata;
+  my_functor->operator()(conn, status, error, stream_error);
+}
+
+void CAPViewer::ConnectionHandlerFunctor::operator()(
+       xmpp_conn_t * const conn __attribute__((unused)), 
+       const xmpp_conn_event_t status, 
+       const int error __attribute__((unused)), 
+       xmpp_stream_error_t * const stream_error __attribute__((unused))) {
   
   if (status == XMPP_CONN_CONNECT) {
     g_debug("xmpp connected"); 
-    xmpp_handler_add(conn, message_handler, NULL, "message", NULL, ctx);
-    doSubscribe(conn, ctx);
+    xmpp_handler_add(conn, &MessageHandlerFunctorInC, NULL, "message", NULL, m_MsgHandler );
+    doSubscribe(conn, m_ctx);
 
   } else if (status == XMPP_CONN_DISCONNECT) {
     g_debug("xmpp disconnected");
-    xmpp_stop(ctx);
+    xmpp_stop(m_ctx);
   } else {
     g_debug("Failure in connection handler");
-    xmpp_stop(ctx);
+    xmpp_stop(m_ctx);
   }
   
 }
 
 void CAPViewer::XmppClient::run() {
-  xmpp_connect_client(conn, NULL, 0, conn_handler, ctx);
+  
+  xmpp_connect_client(conn, NULL, 0, &ConnectionHandlerFunctorInC, &m_ConnHandler);
   xmpp_run(ctx);
 }
 
