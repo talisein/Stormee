@@ -32,7 +32,6 @@ namespace CAPViewer {
   public:
     explicit XmppClient();
     ~XmppClient();
-
     void run();
     void die();
 

@@ -1,4 +1,3 @@
-#include <iostream>
 #include "xmpp.hxx"
 #include "capreader.hxx"
 
