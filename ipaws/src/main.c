@@ -154,7 +154,7 @@ int handle_ipaws(xmpp_conn_t * const conn __attribute__((unused)),
   time_t derp = last_update - 130;
   strftime(tmpstr,32,"%Y-%m-%dT%H:%M:%S",gmtime(&derp));
   sprintf(tmpstr + strlen(tmpstr), "%+03d:%02d", 0,0);
-  derp = time(0);
+  derp = time(NULL);
 
   printf("Fetching since %s\n", tmpstr);
   messages_t* msgs = getMessages(soap, tmpstr);
