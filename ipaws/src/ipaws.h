@@ -7,6 +7,7 @@ struct _ns1__messageResponseTypeDef* getMessage(struct soap* soap, struct ns2__r
 typedef struct {
   char** alerts;
   char** ids;
+  time_t** expires;
   size_t size;
 } messages_t;
 

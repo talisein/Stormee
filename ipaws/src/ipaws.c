@@ -80,7 +80,7 @@ struct _ns1__messageResponseTypeDef* getMessage(struct soap* soap, struct ns2__r
   respList = (struct _ns1__messageResponseTypeDef*) soap_malloc(soap, sizeof(struct _ns1__messageResponseTypeDef));
 
   if (soap_call___ns1__getMessage(soap, "https://tdl.integration.fema.gov/IPAWS_CAPService/IPAWS", NULL, reqList, respList)) {
-    soap_print_fault(soap, stderr);
+    //    soap_print_fault(soap, stderr);
     return NULL;
   }
 
@@ -144,9 +144,19 @@ messages_t* getMessages(struct soap* soap, char* date) {
        free(msg_t);
        return NULL;
      } 
+
      msg_t->ids = (char**) malloc(sizeof(char*)*(msg_t->size));
      if (!msg_t->ids) {
-       perror("Error converting alerts to text. Out of memory [1]");
+       perror("Error converting alerts to text. Out of memory [2]");
+       free(msg_t->alerts);
+       free(msg_t);
+       return NULL;
+     }
+
+     msg_t->expires = (time_t**) malloc(sizeof(time_t*)*(msg_t->size));
+     if (!msg_t->ids) {
+       perror("Error converting alerts to text. Out of memory [3]");
+       free(msg_t->ids);
        free(msg_t->alerts);
        free(msg_t);
        return NULL;
@@ -155,6 +165,7 @@ messages_t* getMessages(struct soap* soap, char* date) {
      for (unsigned int i = 0; i < msg_t->size; i++) {
        msg_t->alerts[i] = NULL;
        msg_t->ids[i] = NULL;
+       msg_t->expires[i] = NULL;
      }
 
      for (int i = 0; i < msgs->__sizealert; i++) {
@@ -185,11 +196,44 @@ messages_t* getMessages(struct soap* soap, char* date) {
 	 }
 	 msg_t->alerts[i][stbuf.st_size] = '\0';
 	 fclose(tmpf);
+
 	 msg_t->ids[i] = strdup(msgs->ns4__alert[i].identifier);
 	 if (!msg_t->ids[i]) {
 	   perror("Incomplete conversion of alert to text, discarding");
 	   free(msg_t->alerts[i]);
 	   goto error_inconsistent_msg_t;
+	 }
+
+	 // Get the latest expiration date
+	 for(int j = 0; j < msgs->ns4__alert[i].__sizeinfo; j++) {
+	   if (msg_t->expires[i] == NULL) {
+	     msg_t->expires[i] = malloc(sizeof(time_t));
+	     if (msg_t->expires[i])
+	       *(msg_t->expires[i]) = *(msgs->ns4__alert[i].info[j].expires);
+	     else {
+	       perror("Incomplete conversion of alert to text, discarding");
+	       free(msg_t->alerts[i]);
+	       free(msg_t->ids[i]);
+	       goto error_inconsistent_msg_t;
+	     }
+	   } else {
+	     if (difftime(*msg_t->expires[i],*(msgs->ns4__alert[i].info[j].expires)) < 0.) {
+	       *(msg_t->expires[i]) = *(msgs->ns4__alert[i].info[j].expires);
+	     }
+	   }
+	 }
+
+	 // If there was no info block, make it expire in a week.
+	 if (msg_t->expires[i] == NULL) {
+	   msg_t->expires[i] = malloc(sizeof(time_t));
+	   if (msg_t->expires[i])
+	     *(msg_t->expires[i]) = msgs->ns4__alert[i].sent + 60*60*24*7;
+	   else {
+	     perror("Incomplete conversion of alert to text, discarding");
+	     free(msg_t->alerts[i]);
+	     free(msg_t->ids[i]);
+	     goto error_inconsistent_msg_t;
+	   }
 	 }
        } else {
 	 perror("Ran out of memory converting alert to text");
@@ -204,6 +248,7 @@ messages_t* getMessages(struct soap* soap, char* date) {
 	 return msg_t;
        } else {
 	 perror("Unable to convert alerts to text [2]");
+	 free(msg_t->expires);
 	 free(msg_t->ids);
 	 free(msg_t->alerts);
 	 free(msg_t);
