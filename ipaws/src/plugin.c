@@ -57,10 +57,10 @@ int plugin(struct soap *soap, struct soap_plugin *p, void *arg)
 
 static int plugin_init(struct soap *soap, struct plugin_data *data)
 { 
-  //  data->fsend = soap->fsend; /* save old recv callback */
-  //  data->frecv = soap->frecv; /* save old send callback */
-  //  soap->fsend = plugin_send; /* replace send callback with ours */
-  //  soap->frecv = plugin_recv; /* replace recv callback with ours */
+  data->fsend = soap->fsend; /* save old recv callback */
+  data->frecv = soap->frecv; /* save old send callback */
+  soap->fsend = plugin_send; /* replace send callback with ours */
+  soap->frecv = plugin_recv; /* replace recv callback with ours */
   return SOAP_OK;
 }
 
