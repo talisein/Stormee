@@ -5,16 +5,19 @@
 #include <openssl/engine.h>
 #include <openssl/pem.h>
 #include <openssl/conf.h>
+#include <glib.h>
 #include "CAPSoapHttp.nsmap"
 #include "plugin.h"
 #include "wsseapi.h"
-#include "xmpp.h"
 #include "ipaws.h"
+#include "xmpp.h"
 
 EVP_PKEY *rsa_private_key = NULL;
 X509 *cert = NULL;
 xmpp_ctx_t *ctx;
 xmpp_conn_t *conn;
+GHashTable* table;
+time_t last_update;
 
 struct soap* init_soap(void);
 void init_xmpp(void);
@@ -42,7 +45,7 @@ void init_xmpp(void) {
 
   /* create a context */
   log = xmpp_get_default_logger(XMPP_LEVEL_DEBUG); /* pass NULL instead to silence output */
-  ctx = xmpp_ctx_new(NULL, log);
+  ctx = xmpp_ctx_new(NULL, NULL);
 
   /* create a connection */
   conn = xmpp_conn_new(ctx);
@@ -60,7 +63,7 @@ struct soap* init_soap(void) {
 
   soap = soap_new1(SOAP_XML_CANONICAL | SOAP_XML_INDENT);
   soap_ssl_init();
-  soap_register_plugin(soap, plugin); // register plugin
+  //  soap_register_plugin(soap, plugin); // register plugin
   soap_register_plugin(soap, soap_wsse);
 
   fd = fopen("secrets", "r");
@@ -145,24 +148,53 @@ void termination_handler (int signum __attribute__((unused)))
 int handle_ipaws(xmpp_conn_t * const conn __attribute__((unused)), 
 		 void * const userdata ) {
   struct soap* soap = (struct soap*) userdata;
+  static char tmpstr[32] = { '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0' };
 
-  messages_t* msgs = getMessages(soap, "2011-10-21T12:21:00-00:00"); 
-  //soap_free_temp(soap);
+  time_t* tmp_timet = NULL;
+  time_t derp = last_update - 130;
+  strftime(tmpstr,32,"%Y-%m-%dT%H:%M:%S",gmtime(&derp));
+  sprintf(tmpstr + strlen(tmpstr), "%+03d:%02d", 0,0);
 
-  for ( unsigned int i = 0; i < msgs->size; i++ ) {
-    sendAlert(conn, ctx, msgs->alerts[i], msgs->ids[i]);
+  printf("Fetching since %s\n", tmpstr);
+  messages_t* msgs = getMessages(soap, tmpstr);
+
+  if (msgs) {
+    last_update = time(0);
+    for ( unsigned int i = 0; i < msgs->size; i++ ) {
+      if ( strncmp(msgs->ids[i], "NOMESSAGEFOUND", 14) == 0 )
+	continue;
+      if ( g_hash_table_lookup_extended(table, msgs->ids[i], NULL, NULL) )
+	continue;
+      sendAlert(conn, ctx, msgs->alerts[i], msgs->ids[i]);
+      tmp_timet = malloc(sizeof(time_t));
+      *tmp_timet = *(msgs->expires[i]);
+      g_hash_table_insert(table, strdup(msgs->ids[i]), tmp_timet);
+      tmp_timet = NULL;      
+    }
+
+    for ( unsigned int i = 0; i < msgs->size; i++ ) {
+      free(msgs->alerts[i]);
+      free(msgs->ids[i]);
+      free(msgs->expires[i]);
+    }
+    free(msgs->ids);
+    free(msgs->alerts);
+    free(msgs);
   }
 
-  for ( unsigned int i = 0; i < msgs->size; i++ ) {
-    free(msgs->alerts[i]);
-    free(msgs->ids[i]);
-  }
-  free(msgs->ids);
-  free(msgs->alerts);
-  free(msgs);
+  soap_free_temp(soap);
 
-  xmpp_disconnect(conn);
-  return 0;
+  return 1;
+}
+
+void key_destroy_func(gpointer data) {
+  // this is a char*
+  free(data);
+}
+
+void value_destroy_func(gpointer data) {
+  // this is a time_t*
+  free(data);
 }
 
 int main(void) {
@@ -170,6 +202,9 @@ int main(void) {
   struct sigaction new_action, old_action;
 
   init_xmpp();
+
+  table = g_hash_table_new(g_str_hash, g_str_equal);
+  last_update = time(NULL) - 60*60*24*3;
 
   /* Set up the structure to specify the new action. */
   new_action.sa_handler = termination_handler;
@@ -190,7 +225,7 @@ int main(void) {
   xmpp_connect_client(conn, NULL, 0, conn_handler, ctx);
 
   if (soap) {
-    xmpp_timed_handler_add(conn, handle_ipaws, 5000, soap);
+    xmpp_timed_handler_add(conn, handle_ipaws, 60000, soap);
     xmpp_run(ctx);
 
     //printRespList(doPing(soap));
@@ -205,6 +240,7 @@ int main(void) {
     return EXIT_FAILURE;
   }
 
+  g_hash_table_destroy(table);
   cleanup(soap);
   return EXIT_SUCCESS;
 }
