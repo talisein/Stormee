@@ -25,6 +25,7 @@ cmake
 libxml2
 gtkmm3
 webkitgtk3
+libnotifymm
 boost (Maybe not?)
 gettext
 libstrophe (You'll have to pull from my github branch of it for now)
@@ -38,12 +39,13 @@ o stormee-bridge is connected to the IPAWS development server.
   - But all these alerts are just test messages.
   - I am now jumping through FEMA's hoops to get access to the
     production server.
+o Use libnotify (preliminary)
 
 Planned features:
-o Use libnotify
 o Provide preferences to selecting location, filtering, etc
 o Display <resource> blocks.
 o Polish
+  - Jazz up notifications
 o Multiplatform
 
 Technical Jargon: Stormee is a GTK+3 C++ application that interfaces
