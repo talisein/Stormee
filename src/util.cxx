@@ -122,3 +122,7 @@ Glib::ustring CAPViewer::Util::getMapFooterText() {
     "</body>\n"								\
     "</html>\n";
 }
+
+const Glib::ustring CAPViewer::Util::getAppName() {
+  return "Stormee";
+}

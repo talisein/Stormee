@@ -10,5 +10,6 @@ namespace CAPViewer {
     Glib::ustring getMapPolygon(const CAPViewer::Polygon&, int idx);
     Glib::ustring getMapCircle(const CAPViewer::Circle&, int idx);
     Glib::ustring getMapFooterText();
+    const Glib::ustring getAppName();
   }
 }
