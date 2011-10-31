@@ -1,34 +1,26 @@
-#include <set>
-#include <queue>
 #include <gtkmm/window.h>
+#include <gtkmm/builder.h>
+#include <gtkmm/treestore.h>
 #include <gtkmm/scrolledwindow.h>
 #include <gtkmm/widget.h>
 #include <gtkmm/grid.h>
-#include <gtkmm/builder.h>
-#include <gtkmm/treestore.h>
 #include <gtkmm/combobox.h>
 #include <gtkmm/tooltip.h>
 #include <gtkmm/notebook.h>
 #include <gtkmm/texttagtable.h>
 #include <gtkmm/textbuffer.h>
-#include <glibmm/thread.h>
-#include <giomm/file.h>
-
 #include "cap.hxx"
-#include "xmpp.hxx"
 
 namespace CAPViewer {
   
   class Window : public Gtk::Window {
   public:
     Window(BaseObjectType* cobject, const Glib::RefPtr<Gtk::Builder>& refGlade);
-    ~Window();
     
-    void accept_caps(const std::vector<std::shared_ptr<CAPViewer::CAP>>&);
+    void display_cap(const CAPViewer::CAP& cap);
 
   protected:
     void on_button_quit();
-    void on_openFileMenu();
     
     class ComboBoxModelColumns : public Gtk::TreeModel::ColumnRecord {
     public:
@@ -63,22 +55,13 @@ namespace CAPViewer {
     Gtk::TreeView::Column valueColumn;
 
   private:
-    void produce_cap_from_file(Glib::RefPtr<Gio::File>);
-    void produce_cap_from_url(const Glib::ustring&);
-    void consume_cap();
+
     void on_combo_changed();
+
     void addKeyValue(const Glib::ustring&, const Glib::ustring&, const Glib::ustring& = "", const Glib::ustring& valueTooltip = "");
     void addKeyValueChild(const Gtk::TreeNodeChildren&, const Glib::ustring&, const Glib::ustring&, const Glib::ustring& keyTooltip = "", const Glib::ustring& valueTooltip = "");
     bool m_query_tooltip(int x, int y, bool keyboard_tooltip, const Glib::RefPtr<Gtk::Tooltip>& tooltip);
 
-    std::shared_ptr<CAPViewer::XmppClient> xmppClient;
-    Glib::Thread* xmppThreadPtr;
-    sigc::connection xmppConnection;
-
-    std::set<CAPViewer::CAP> seen_caps;
-    std::queue<CAPViewer::CAP> queue_cap;
-    Glib::Mutex mutex;
-    Glib::Dispatcher signal_cap;
 
     Glib::RefPtr<Gtk::TreeStore> m_refComboBoxModel;
     Glib::RefPtr<Gtk::TreeStore> m_refKeyValueModel;
@@ -89,7 +72,6 @@ namespace CAPViewer {
     Glib::RefPtr<Gtk::TextBuffer::Tag> centerMonoTag;
     Glib::RefPtr<Gtk::TextBuffer::Tag> leftTag;
     Glib::RefPtr<Gtk::TextBuffer::Tag> leftMonoTag;
-
   };
 
 

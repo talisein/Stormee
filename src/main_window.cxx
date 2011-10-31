@@ -1,24 +1,13 @@
 #include <iostream>
-#include <gtkmm/imagemenuitem.h>
-#include <gtkmm/filechooserdialog.h>
 #include <gtkmm/linkbutton.h>
+#include <gtkmm/widget.h>
 #include <gtkmm.h>
 #include <webkit/webkitwebview.h>
 #include "main_window.hxx"
 #include "util.hxx"
-#include "capreader.hxx"
 
 CAPViewer::Window::Window(BaseObjectType* cobject, const Glib::RefPtr<Gtk::Builder>& refBuilder) : Gtk::Window(cobject)
 {
-
-  Gtk::ImageMenuItem* openFileItem = 0;
-  signal_cap.connect(sigc::mem_fun(*this, &CAPViewer::Window::consume_cap));
-
-  // Connect signals for the menu
-  refBuilder->get_widget("openFileMenuItem", openFileItem);
-  if (openFileItem) {
-    openFileItem->signal_activate().connect( sigc::mem_fun(this, &CAPViewer::Window::on_openFileMenu ));
-  }
 
   // Setup the Tree View
   refBuilder->get_widget("keyValueTreeView", keyValueTreeView);
@@ -69,11 +58,6 @@ CAPViewer::Window::Window(BaseObjectType* cobject, const Glib::RefPtr<Gtk::Build
   tagtable->add(leftMonoTag);
 
   show_all_children();
-
-  xmppClient = std::shared_ptr<CAPViewer::XmppClient>(new CAPViewer::XmppClient());
-  xmppConnection = xmppClient->signal_cap.connect(sigc::mem_fun(*this, &CAPViewer::Window::accept_caps));
-
-  xmppThreadPtr = Glib::Thread::create(sigc::mem_fun(*xmppClient, &CAPViewer::XmppClient::run), true);
 }
 
 bool CAPViewer::Window::m_query_tooltip(int x, int y, bool, const Glib::RefPtr<Gtk::Tooltip>& tooltip) {
@@ -204,7 +188,7 @@ void CAPViewer::Window::on_combo_changed() {
 	  auto polys = area.getPolygons();
 	  auto circles = area.getCircles();
 	  if ( polys.size() > 0 || circles.size() > 0 ) {
-	    WebKitWebView* webview = WEBKIT_WEB_VIEW ( webkit_web_view_new() );
+	    GtkWidget* webview_raw = webkit_web_view_new();
 	    Glib::ustring mapHtml(CAPViewer::Util::getMapHeaderText());
 
 	    for ( uint i = 0; i < polys.size(); i++ ) {
@@ -216,18 +200,12 @@ void CAPViewer::Window::on_combo_changed() {
 	    }
 
 	    mapHtml.append(CAPViewer::Util::getMapFooterText());
-	    webkit_web_view_load_html_string( webview, mapHtml.c_str(), "http://localhost/CAPAlert" );
-
-	    Gtk::Widget* wrapview = Glib::wrap( GTK_WIDGET( webview ) );
-	    Gtk::ScrolledWindow* sw = Gtk::manage(new Gtk::ScrolledWindow());
-	    sw->add(*wrapview);
-	    m_notebook->append_page(*sw, "Map");
+	    webkit_web_view_load_html_string( WEBKIT_WEB_VIEW(webview_raw), mapHtml.c_str(), "http://localhost/CAPAlert" );
+	    
+	    Gtk::Widget* webview = Gtk::manage(Glib::wrap(webview_raw));
+	    m_notebook->append_page(*webview, "Map");
 	  }
 	}
-	//	using ::Gtk::Widget;
-
-
-
       } // for Infos()
 
       keyValueTreeView->expand_all();
@@ -256,83 +234,23 @@ void CAPViewer::Window::addKeyValueChild(const Gtk::TreeNodeChildren& parent, co
   }
 }
 
-CAPViewer::Window::~Window() {
-  // TODO: We are assuming that die() is thread safe. >_>
-  xmppClient->die();
-  xmppThreadPtr->join();
-  xmppConnection.disconnect();
-  xmppClient.reset();
-}
-
 void CAPViewer::Window::on_button_quit() {
   hide();
 }
 
-void CAPViewer::Window::consume_cap() {
-  Glib::Mutex::Lock lock(mutex);
+// Called from CAPViewer::Application when it gets a CAP from XMPP
+// Also should be called from OpenFromFile
+void CAPViewer::Window::display_cap(const CAPViewer::CAP& cap) {
   
-  while ( !queue_cap.empty() ) {
-    CAPViewer::CAP cap = queue_cap.front(); queue_cap.pop();
-    if ( seen_caps.count(cap) < 1 ) {
-      seen_caps.insert(cap);
-      // populate
-      Gtk::TreeModel::Row row = *(m_refComboBoxModel->append());
-      row[m_ComboBoxModelColumns.m_col_title] = cap.getTitle();
-      row[m_ComboBoxModelColumns.m_col_status] = CAPViewer::statusStringMap.find(cap.getStatus())->second;
-      row[m_ComboBoxModelColumns.m_col_msgType] = CAPViewer::msgTypeStringMap.find(cap.getMsgType())->second;
-      row[m_ComboBoxModelColumns.m_col_urgency] = CAPViewer::urgencyStringMap.find(cap.getUrgency())->second;
-      row[m_ComboBoxModelColumns.m_col_severity] = CAPViewer::severityStringMap.find(cap.getSeverity())->second;
-      row[m_ComboBoxModelColumns.m_col_cap] = cap;
-
-      if (m_comboBox->get_active_row_number() == -1)
-	m_comboBox->set_active(0);
-    }
-  }
+  Gtk::TreeModel::Row row = *(m_refComboBoxModel->append());
+  row[m_ComboBoxModelColumns.m_col_title] = cap.getTitle();
+  row[m_ComboBoxModelColumns.m_col_status] = CAPViewer::statusStringMap.find(cap.getStatus())->second;
+  row[m_ComboBoxModelColumns.m_col_msgType] = CAPViewer::msgTypeStringMap.find(cap.getMsgType())->second;
+  row[m_ComboBoxModelColumns.m_col_urgency] = CAPViewer::urgencyStringMap.find(cap.getUrgency())->second;
+  row[m_ComboBoxModelColumns.m_col_severity] = CAPViewer::severityStringMap.find(cap.getSeverity())->second;
+  row[m_ComboBoxModelColumns.m_col_cap] = cap;
+  
+  if (m_comboBox->get_active_row_number() == -1)
+    m_comboBox->set_active(0);
 }
 
-void CAPViewer::Window::accept_caps(const std::vector<std::shared_ptr<CAPViewer::CAP>> &caps) {
-  for (auto capptr : caps) {
-    Glib::Mutex::Lock lock(mutex);
-    queue_cap.push(*capptr);
-  }
-
-  signal_cap();
-} 
-
-void CAPViewer::Window::produce_cap_from_file(Glib::RefPtr<Gio::File> fptr) {
-  CAPViewer::CAPReaderFile reader(fptr);
-  reader.do_parse();
-  
-  {
-    for ( auto capptr : reader.getCAPs() ) {
-      Glib::Mutex::Lock lock(mutex);
-      queue_cap.push(*capptr);
-    }
-  }
-  
-  signal_cap();
-}
-
-void CAPViewer::Window::on_openFileMenu() {
-  Gtk::FileChooserDialog fcd("Please choose a CAP file", Gtk::FILE_CHOOSER_ACTION_OPEN);
-  
-  fcd.set_transient_for(*this);
-  fcd.add_button(Gtk::Stock::CANCEL, Gtk::RESPONSE_CANCEL);
-  fcd.add_button(Gtk::Stock::OPEN, Gtk::RESPONSE_OK);
-  fcd.set_select_multiple(true);
-  int result = fcd.run();
-
-  switch (result) {
-  case Gtk::RESPONSE_OK:
-    
-    for (auto fptr : fcd.get_files() ) {
-      Glib::Thread::create(sigc::bind(sigc::mem_fun(*this, &CAPViewer::Window::produce_cap_from_file),fptr), false);
-   }
-    
-    break;
-  case Gtk::RESPONSE_CANCEL:
-    break;
-  default:
-    break;
-  }
-}
