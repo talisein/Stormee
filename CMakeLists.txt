@@ -30,9 +30,10 @@ pkg_check_modules(GTKMM3 gtkmm-3.0 REQUIRED)
 pkg_check_modules(XML++ libxml++-2.6 REQUIRED)
 pkg_check_modules(GTHREAD gthread-2.0 REQUIRED)
 pkg_check_modules(STROPHE libstrophe REQUIRED)
+pkg_check_modules(LIBNOTIFY libnotifymm-1.0 REQUIRED)
 
 set(CMAKE_BUILD_TYPE debug)
-set(CMAKE_CXX_FLAGS_DEBUG "-ggdb -O0")
+set(CMAKE_CXX_FLAGS_DEBUG "-ggdb3 -O2" )
 
 add_definitions(-Wall -Wextra -pedantic -std=c++0x -D_GNU_SOURCE)
 
