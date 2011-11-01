@@ -6,9 +6,11 @@
 #include <glibmm/thread.h>
 #include <glibmm/refptr.h>
 #include <sigc++/connection.h>
+#include <giomm/dbusproxy.h>
 #include "main_window.hxx"
 #include "xmpp.hxx"
 #include "cap.hxx"
+
 
 
 namespace CAPViewer {
@@ -39,5 +41,7 @@ namespace CAPViewer {
     std::set<CAPViewer::CAP> seen_caps;
     std::queue<CAPViewer::CAP> queue_cap;
 
+    void dbus_init();
+    Glib::RefPtr<Gio::DBus::Proxy> dbus_proxy; 
   };
 }

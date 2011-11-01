@@ -28,8 +28,25 @@ CAPViewer::Application::Application(int argc, char *argv[]) :
   } else {
     // TODO: Error condition
   }
-  
 
+  dbus_init();
+}
+
+void CAPViewer::Application::dbus_init() {
+  try {
+    dbus_proxy = Gio::DBus::Proxy::create_for_bus_sync(Gio::DBus::BusType::BUS_TYPE_SESSION,
+				     "org.freedesktop.Notifications", // name
+				     "/org/freedesktop/Notifications", // object path
+				     "org.freedesktop.Notifications", // interface name
+				     Glib::RefPtr<Gio::DBus::InterfaceInfo>(),
+				     Gio::DBus::ProxyFlags::PROXY_FLAGS_DO_NOT_LOAD_PROPERTIES); // ProxyFlags
+  } catch (Glib::Error e) {
+    g_error("Got Glib:Error in dbus_init()");
+  }
+
+  if (!dbus_proxy) {
+    g_error("Couldn't get the DBus Notification proxy");
+  }
 }
 
 void CAPViewer::Application::run() {
@@ -44,7 +61,6 @@ CAPViewer::Application::~Application() {
   xmpp_thread_ptr->join();
   xmppConnection.disconnect();
   xmpp_client_ptr.reset();
-
 }
 
 // Called on the main loop
@@ -55,7 +71,7 @@ void CAPViewer::Application::consume_cap() {
     CAPViewer::CAP cap = queue_cap.front(); queue_cap.pop();
     if ( seen_caps.count(cap) < 1 ) {
       seen_caps.insert(cap);
-      CAPViewer::Notification::Notify(cap);
+      CAPViewer::Notification::Notify(cap, dbus_proxy);
 
       m_window->display_cap(cap);
     }

@@ -25,10 +25,10 @@ cmake
 libxml2
 gtkmm3
 webkitgtk3
-libnotifymm
 boost (Maybe not?)
 gettext
 libstrophe (You'll have to pull from my github branch of it for now)
+libchamplain
 
 Current features:
 o Read CAP files from local disk and display in the gui
@@ -39,7 +39,7 @@ o stormee-bridge is connected to the IPAWS development server.
   - But all these alerts are just test messages.
   - I am now jumping through FEMA's hoops to get access to the
     production server.
-o Use libnotify (preliminary)
+o Provide basic desktop notification
 
 Planned features:
 o Provide preferences to selecting location, filtering, etc

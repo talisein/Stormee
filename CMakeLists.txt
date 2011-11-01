@@ -23,17 +23,16 @@ find_package( Gettext REQUIRED )
 find_package( Boost REQUIRED COMPONENTS date_time )
 
 find_package(PkgConfig)
-#find_package( WebkitGTK REQUIRED )
 
-pkg_check_modules(WEBKITGTK webkitgtk-3.0 REQUIRED)
 pkg_check_modules(GTKMM3 gtkmm-3.0 REQUIRED)
 pkg_check_modules(XML++ libxml++-2.6 REQUIRED)
 pkg_check_modules(GTHREAD gthread-2.0 REQUIRED)
 pkg_check_modules(STROPHE libstrophe REQUIRED)
-pkg_check_modules(LIBNOTIFY libnotifymm-1.0 REQUIRED)
+pkg_check_modules(WEBKITGTK webkitgtk-3.0 REQUIRED)
+pkg_check_modules(CHAMPLAIN champlain-0.12 REQUIRED)
 
 set(CMAKE_BUILD_TYPE debug)
-set(CMAKE_CXX_FLAGS_DEBUG "-ggdb3 -O2" )
+set(CMAKE_CXX_FLAGS_DEBUG "-ggdb3 -O0" )
 
 add_definitions(-Wall -Wextra -pedantic -std=c++0x -D_GNU_SOURCE)
 
