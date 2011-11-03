@@ -2,9 +2,10 @@
 #include <gtkmm/linkbutton.h>
 #include <gtkmm/widget.h>
 #include <gtkmm.h>
-#include <webkit/webkitwebview.h>
+//#include <webkit/webkitwebview.h>
 #include "main_window.hxx"
 #include "util.hxx"
+#include <champlain-gtk/champlain-gtk.h>
 
 CAPViewer::Window::Window(BaseObjectType* cobject, const Glib::RefPtr<Gtk::Builder>& refBuilder) : Gtk::Window(cobject)
 {
@@ -188,22 +189,30 @@ void CAPViewer::Window::on_combo_changed() {
 	  auto polys = area.getPolygons();
 	  auto circles = area.getCircles();
 	  if ( polys.size() > 0 || circles.size() > 0 ) {
-	    GtkWidget* webview_raw = webkit_web_view_new();
-	    Glib::ustring mapHtml(CAPViewer::Util::getMapHeaderText());
+	    GtkWidget* cham_raw = gtk_champlain_embed_new();
+	    ChamplainView* cham_view = gtk_champlain_embed_get_view( GTK_CHAMPLAIN_EMBED( cham_raw ) );
 
 	    for ( uint i = 0; i < polys.size(); i++ ) {
-	      mapHtml.append(CAPViewer::Util::getMapPolygon(polys[i], i));
+	      ChamplainPathLayer* path = champlain_path_layer_new();
+	      guint counter = 0;
+	      for ( auto coord : polys[i].getPoints() ) {
+		ChamplainCoordinate* location = champlain_coordinate_new_full(coord.getLatitude(), coord.getLongitude());
+		champlain_path_layer_insert_node(path, CHAMPLAIN_LOCATION( location ), counter++);
+	      }
+	      champlain_path_layer_set_closed(path, true);
+	      champlain_path_layer_set_fill(path, true);
+	      champlain_view_add_layer( cham_view, CHAMPLAIN_LAYER(path) );
 	    }
+	    
+	    champlain_view_ensure_layers_visible(cham_view, false);
+	    champlain_view_set_zoom_level(cham_view, 7);
 
 	    for ( uint i = 0; i < circles.size(); i++ ) {
-	      mapHtml.append(CAPViewer::Util::getMapCircle(circles[i], i));
+	      // TODO: Display circles
 	    }
 
-	    mapHtml.append(CAPViewer::Util::getMapFooterText());
-	    webkit_web_view_load_html_string( WEBKIT_WEB_VIEW(webview_raw), mapHtml.c_str(), "http://localhost/CAPAlert" );
-	    
-	    Gtk::Widget* webview = Gtk::manage(Glib::wrap(webview_raw));
-	    m_notebook->append_page(*webview, "Map");
+	    Gtk::Widget* cham = Gtk::manage(Glib::wrap(cham_raw));
+	    m_notebook->append_page(*cham, "Map");
 	  }
 	}
       } // for Infos()

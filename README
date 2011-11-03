@@ -24,7 +24,6 @@ Dependancies:
 cmake
 libxml2
 gtkmm3
-webkitgtk3
 boost (Maybe not?)
 gettext
 libstrophe (You'll have to pull from my github branch of it for now)
@@ -46,6 +45,7 @@ o Provide preferences to selecting location, filtering, etc
 o Display <resource> blocks.
 o Polish
   - Jazz up notifications
+  - Display circles in map.
 o Multiplatform
 
 Technical Jargon: Stormee is a GTK+3 C++ application that interfaces
