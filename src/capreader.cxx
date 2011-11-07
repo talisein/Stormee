@@ -7,16 +7,6 @@
 CAPViewer::CAPReader::CAPReader() : inEventCode(false), inParameter(false), inGeocode(false) {
 }
 
-CAPViewer::CAPReader::~CAPReader() {
-  cap.reset();
-}
-
-CAPViewer::CAPReaderFile::~CAPReaderFile() {
-}
-
-CAPViewer::CAPReaderBuffer::~CAPReaderBuffer() {
-}
-
 CAPViewer::CAPReaderFile::CAPReaderFile(const Glib::RefPtr<const Gio::File>& f) : CAPViewer::CAPReader(), file(f) {
 }
 
@@ -153,6 +143,32 @@ void CAPViewer::CAPReader::on_start_element(const Glib::ustring& name,
       resource = std::shared_ptr<CAPViewer::Resource>(new CAPViewer::Resource());
   } else if (name.find("source") != Glib::ustring::npos) {
     node = nSource;
+  } else if (name.find("Signature") != Glib::ustring::npos) {
+    node = nSignature;
+  } else if (name.find("SignedInfo") != Glib::ustring::npos) {
+    node = nSignature;
+  } else if (name.find("CanonicalizationMethod") != Glib::ustring::npos) {
+    node = nSignature;
+  } else if (name.find("SignatureMethod") != Glib::ustring::npos) {
+    node = nSignature;
+  } else if (name.find("Reference") != Glib::ustring::npos) {
+    node = nSignature;
+  } else if (name.find("Transform") != Glib::ustring::npos) {
+    node = nSignature;
+  } else if (name.find("DigestMethod") != Glib::ustring::npos) {
+    node = nSignature;
+  } else if (name.find("DigestValue") != Glib::ustring::npos) {
+    node = nSignature;
+  } else if (name.find("SignatureValue") != Glib::ustring::npos) {
+    node = nSignature;
+  } else if (name.find("KeyInfo") != Glib::ustring::npos) {
+    node = nSignature;
+  } else if (name.find("X509Data") != Glib::ustring::npos) {
+    node = nSignature;
+  } else if (name.find("X509SubjectName") != Glib::ustring::npos) {
+    node = nSignature;
+  } else if (name.find("X509Certificate") != Glib::ustring::npos) {
+    node = nSignature;
   } else {
     g_debug("Unknown CAP field '%s'", name.c_str());
   }
@@ -288,6 +304,8 @@ void CAPViewer::CAPReader::on_end_element(const Glib::ustring& name) {
     break;
   case nDigest: 
       resource->setDigest(str_buf);
+    break;
+  case nSignature:
     break;
   default:
     if (!str_buf.empty() && str_buf.find_first_not_of("\n\t\r ") != Glib::ustring::npos)
