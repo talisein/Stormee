@@ -1,11 +1,8 @@
 #include "cap.hxx"
 #include "datetime.hxx"
-#include "log.hxx"
 #include "util.hxx"
 #include <libintl.h>
 #define _(String) gettext (String)
-
-using CAPViewer::Log;
 
 CAPViewer::CAP& CAPViewer::CAP::addCode(const Glib::ustring& in) {
   codes.push_back(in);
@@ -126,10 +123,10 @@ CAPViewer::CAP& CAPViewer::CAP::setStatus(const Glib::ustring& in) {
   auto iter = CAPViewer::stringStatusMap.find(CAPViewer::Util::squish(in));
   if ( iter != CAPViewer::stringStatusMap.end() ) {
     status = iter->second;
-    return *this;
   } else {
-    throw CAPViewer::EnumParseError("Invalid status: " + in);
+    g_warning("Invalid status: %s", in.c_str());
   }
+  return *this;
 }
 
 CAPViewer::eStatus CAPViewer::CAP::getStatus() const {
@@ -146,22 +143,14 @@ CAPViewer::CAP& CAPViewer::CAP::setMsgType(const Glib::ustring& in) {
   auto iter = CAPViewer::stringMsgTypeMap.find(CAPViewer::Util::squish(in));
   if ( iter != CAPViewer::stringMsgTypeMap.end() ) {
     msgType = iter->second;
-    return *this;
   } else {
-    throw CAPViewer::EnumParseError("Invalid msgType: " + in);
+    g_warning("Invalid msgType: %s", in.c_str());
   }
+  return *this;
 }
 
 CAPViewer::eMsgType CAPViewer::CAP::getMsgType() const {
   return msgType;
-}
-
-CAPViewer::eUrgency CAPViewer::CAP::getUrgency() const {
-  return infos.front().getUrgency();
-}
-
-CAPViewer::eSeverity CAPViewer::CAP::getSeverity() const {
-  return infos.front().getSeverity();
 }
 
 CAPViewer::CAP& CAPViewer::CAP::setScope(const CAPViewer::eScope& in) {
@@ -173,10 +162,11 @@ CAPViewer::CAP& CAPViewer::CAP::setScope(const Glib::ustring& in) {
   auto iter = CAPViewer::stringScopeMap.find(CAPViewer::Util::squish(in));
   if ( iter != CAPViewer::stringScopeMap.end() ) {
     scope = iter->second;
-    return *this;
   } else {
-    throw CAPViewer::EnumParseError("Invalid scope: " + in);
+    g_warning("Invalid scope: %s", in.c_str());
+    scope = CAPViewer::eScope::Public;
   }
+  return *this;
 }
 
 CAPViewer::eScope CAPViewer::CAP::getScope() const {
@@ -235,20 +225,20 @@ CAPViewer::Info& CAPViewer::Info::addCategory(const Glib::ustring& in) {
   auto iter = CAPViewer::stringCategoryMap.find(CAPViewer::Util::squish(in));
   if ( iter != CAPViewer::stringCategoryMap.end() ) {
     categories.push_back(iter->second);
-    return *this;
   } else {
-    throw CAPViewer::EnumParseError("Invalid category: " + in);
+    g_warning("Invalid category: %s", in.c_str());
   }
+  return *this;
 }
 
 CAPViewer::Info& CAPViewer::Info::addResponse(const Glib::ustring& in) {
   auto iter = CAPViewer::stringResponseMap.find(CAPViewer::Util::squish(in));
   if ( iter != CAPViewer::stringResponseMap.end() ) {
     responses.push_back(iter->second);
-    return *this;
   } else {
-    throw CAPViewer::EnumParseError("Invalid response: " + in);
+    g_warning("Invalid response: %s", in.c_str());
   }
+  return *this;
 }
 
 CAPViewer::Info& CAPViewer::Info::addEventCode(const Glib::ustring& key, const Glib::ustring& value) {
@@ -267,30 +257,33 @@ CAPViewer::Info& CAPViewer::Info::setUrgency(const Glib::ustring& in) {
   auto iter = CAPViewer::stringUrgencyMap.find(CAPViewer::Util::squish(in));
   if ( iter != CAPViewer::stringUrgencyMap.end() ) {
     urgency = iter->second;
-    return *this;
   } else {
-    throw CAPViewer::EnumParseError("Invalid urgency: " + in);
+    g_warning("Invalid urgency: %s", in.c_str());
+    urgency = CAPViewer::eUrgency::uUnknown;
   }
+  return *this;
 }
 
 CAPViewer::Info& CAPViewer::Info::setSeverity(const Glib::ustring& in) {
   auto iter = CAPViewer::stringSeverityMap.find(CAPViewer::Util::squish(in));
   if ( iter != CAPViewer::stringSeverityMap.end() ) {
     severity = iter->second;
-    return *this;
   } else {
-    throw CAPViewer::EnumParseError("Invalid severity: " + in);
+    g_warning("Invalid severity: %s", in.c_str());
+    severity = CAPViewer::eSeverity::sUnknown;
   }
+  return *this;
 }
 
 CAPViewer::Info& CAPViewer::Info::setCertainty(const Glib::ustring& in) {
   auto iter = CAPViewer::stringCertaintyMap.find(CAPViewer::Util::squish(in));
   if ( iter != CAPViewer::stringCertaintyMap.end() ) {
     certainty = iter->second;
-    return *this;
   } else {
-    throw CAPViewer::EnumParseError("Invalid certainty: " + in);
+    g_warning("Invalid certainty: %s", in.c_str());
+    certainty = CAPViewer::eCertainty::cUnknown;
   }
+  return *this;
 }
 
 /* Resource methods */
@@ -303,16 +296,16 @@ CAPViewer::Resource& CAPViewer::Resource::setSize(const Glib::ustring& in) {
   s >> std::ws;
   
   if (s.eof())
-    throw SizeParseError("No size found in given string; all whitespace");
+    g_warning("No size found in given string; all whitespace");
 
   s >> size >> std::ws;
   if (s.bad())
-    throw std::ios_base::failure("'Bad' failure on stream parsing resource size");
+    g_warning("'Bad' failure on stream parsing resource size");
   if (s.fail())
-    throw SizeParseError("Error parsing resource size");
+    g_warning("Error parsing resource size");
 
   if (!s.eof())
-    Log::warn("Parsed resource size from string, but text remains in string. Original string: " + in);
+    g_warning("Parsed resource size from string, but text remains in string. Original string: %s", in.c_str());
 
   return *this;
 }
@@ -362,16 +355,16 @@ CAPViewer::Circle& CAPViewer::Circle::setCircle(std::stringstream& in) {
   coords.setLatLong(in);
 
   if (in.eof())
-    throw CoordinateParseError("Got circle center coordinate, but no radius");
+    g_warning("Got circle center coordinate, but no radius");
 
   in >> radius >> std::ws;
   if (in.bad())
-    throw std::ios_base::failure("'Bad' failure on stream parsing circle radius");
+    g_warning("'Bad' failure on stream parsing circle radius");
   if (in.fail())
-    throw CoordinateParseError("Failure parsing circle radius");
+    g_warning("Failure parsing circle radius");
 
   if (!in.eof()) {
-    Log::warn("Parsed a circle, but there is unexpected data left in the string");
+    g_warning("Parsed a circle, but there is unexpected data left in the string");
   }
   return *this;
 }
@@ -395,81 +388,69 @@ CAPViewer::Coords& CAPViewer::Coords::setLatLong(std::stringstream& s) {
 
   s >> std::ws;
   if (s.eof())
-    throw CoordinateParseError("No latitude or longitude in stream");
+    g_warning("No latitude or longitude in stream");
   
   s >> latitude;
   if (s.eof())
-    throw CoordinateParseError("Got latitude but no longitude in stream");
+    g_warning("Got latitude but no longitude in stream");
   if (s.bad())
-    throw std::ios_base::failure("'Bad' failure on stream parsing latitude");
+    g_warning("'Bad' failure on stream parsing latitude");
   if (s.fail())
-    throw CoordinateParseError("Failure on stream paring latitude. Probably no number at the beginning of the stream.");
+    g_warning("Failure on stream paring latitude. Probably no number at the beginning of the stream.");
 
   if ( s.get() != ',' ) {
     s.unget();
-    throw CoordinateParseError("Invalid formatting, didn't find expected comma");
+    g_warning("Invalid formatting, didn't find expected comma");
   }
 
   if (s.eof()) 
-    throw CoordinateParseError("Got latitude but no longitude in stream");
+    g_warning("Got latitude but no longitude in stream");
   if (s.bad())
-    throw std::ios_base::failure("'Bad' failure on stream parsing comma");
+    g_warning("'Bad' failure on stream parsing comma");
   if (s.fail())
-    throw CoordinateParseError("Failure on stream parsing comma");
+    g_warning("Failure on stream parsing comma");
 
   s >> longitude >> std::ws;
   if (s.bad())
-    throw std::ios_base::failure("'Bad' failure on stream parsing longitude");
+    g_warning("'Bad' failure on stream parsing longitude");
   if (s.fail())
-    throw CoordinateParseError("Failure on stream parsing longitude. Probably no number after the comma.");
+    g_warning("Failure on stream parsing longitude. Probably no number after the comma.");
   
   s.flags(flags); // reset stream to default
   return *this;
 }
 
-CAPViewer::Coords& CAPViewer::Coords::setLatitude(const Glib::ustring& in) {
+static gdouble stringToDouble(const Glib::ustring& in) {
   std::stringstream s;
+  gdouble out = 0.0;
   s << in.raw();
 
   s >> std::ws;
   if (s.eof())
-    throw CoordinateParseError("No latitude in given string");
+    g_warning("No double in given string");
 
-  s >> latitude >> std::ws;
+  s >> out >> std::ws;
   if (s.bad()) {
-    throw std::ios_base::failure("'Bad' failure on stream parsing latitude");
+    g_warning("'Bad' failure on stream parsing double");
   }
   if (s.fail()) {
-    throw CoordinateParseError("Failure on stream parsing latitude. Input was " + in);
+    g_warning("Failure on stream parsing double. Input was %s", in.c_str());
   }
 
   if (!s.eof()) {
-    Log::warn("Parsed a latitude but there is still unparsed text. Input was " + in);
+    g_warning("Parsed a double but there is still unparsed text. Input was %s", in.c_str());
   }
 
+  return out;
+}
+
+CAPViewer::Coords& CAPViewer::Coords::setLatitude(const Glib::ustring& in) {
+  latitude = stringToDouble(in);
   return *this;
 }
 
 CAPViewer::Coords& CAPViewer::Coords::setLongitude(const Glib::ustring& in) {
-  std::stringstream s;
-  s << in.raw();
-
-  s >> std::ws;
-  if (s.eof())
-    throw CoordinateParseError("No longitude in given string");
-
-  s >> latitude >> std::ws;
-  if (s.bad()) {
-    throw std::ios_base::failure("'Bad' failure on stream parsing longitude");
-  }
-  if (s.fail()) {
-    throw CoordinateParseError("Failure on stream parsing longitude. Input was " + in);
-  }
-
-  if (!s.eof()) {
-    Log::warn("Parsed a longitude but there is still unparsed text. Input was " + in);
-  }
-
+  longitude = stringToDouble(in);
   return *this;
 }
 
@@ -490,15 +471,15 @@ CAPViewer::Area& CAPViewer::Area::setAltitude(const Glib::ustring& in) {
   
   s >> std::ws;
   if (s.eof())
-    throw AltitudeParseError("No altitude in given string; all whitespace");
+    g_warning("No altitude in given string; all whitespace");
 
   s >> altitude >> std::ws;
   if (s.bad())
-    throw std::ios_base::failure("'Bad' failure on stream parsing altitude");
+    g_warning("'Bad' failure on stream parsing altitude");
   if (s.fail())
-    throw AltitudeParseError("Error parsing altitude from given string");
+    g_warning("Error parsing altitude from given string");
   if (!s.eof())
-    Log::warn("Parsed altitude from string, but text remains in string. Original string: " + in);
+    g_warning("Parsed altitude from string, but text remains in string. Original string: %s", in.c_str());
 
   return *this;
 }
@@ -509,15 +490,15 @@ CAPViewer::Area& CAPViewer::Area::setCeiling(const Glib::ustring& in) {
   
   s >> std::ws;
   if (s.eof())
-    throw AltitudeParseError("No ceiling in given string; all whitespace");
+    g_warning("No ceiling in given string; all whitespace");
 
   s >> ceiling >> std::ws;
   if (s.bad())
-    throw std::ios_base::failure("'Bad' failure on stream parsing ceiling");
+    g_warning("'Bad' failure on stream parsing ceiling");
   if (s.fail())
-    throw AltitudeParseError("Error parsing ceiling from given string");
+    g_warning("Error parsing ceiling from given string");
   if (!s.eof())
-    Log::warn("Parsed ceiling from string, but text remains in string. Original string: " + in);
+    g_warning("Parsed ceiling from string, but text remains in string. Original string: %s", in.c_str());
 
   return *this;
 }
@@ -527,7 +508,7 @@ CAPViewer::Area& CAPViewer::Area::setCeiling(const Glib::ustring& in) {
 const Glib::ustring CAPViewer::aboutScope(const CAPViewer::eScope& in) {
   auto it =  CAPViewer::aboutScopeMap.find(in);
   if (it == CAPViewer::aboutScopeMap.end()) {
-    Log::error("Invalid scope passed to CAPViewer::aboutScope(eScope)");
+    g_error("Invalid scope passed to CAPViewer::aboutScope(eScope)");
     return CAPViewer::aboutErrorText;
   }
   else
@@ -537,7 +518,7 @@ const Glib::ustring CAPViewer::aboutScope(const CAPViewer::eScope& in) {
 const Glib::ustring CAPViewer::aboutMsgType(const CAPViewer::eMsgType& in) {
   auto it =  CAPViewer::aboutMsgTypeMap.find(in);
   if (it == CAPViewer::aboutMsgTypeMap.end()) {
-    Log::error("Invalid msgType passed to CAPViewer::aboutMsgType(eMsgType)");
+    g_error("Invalid msgType passed to CAPViewer::aboutMsgType(eMsgType)");
     return CAPViewer::aboutErrorText;
   }
   else
@@ -547,7 +528,7 @@ const Glib::ustring CAPViewer::aboutMsgType(const CAPViewer::eMsgType& in) {
 const Glib::ustring CAPViewer::aboutStatus(const CAPViewer::eStatus& in) {
   auto it =  CAPViewer::aboutStatusMap.find(in);
   if (it == CAPViewer::aboutStatusMap.end()) {
-    Log::error("Invalid status passed to CAPViewer::aboutStatus(eStatus)");
+    g_error("Invalid status passed to CAPViewer::aboutStatus(eStatus)");
     return CAPViewer::aboutErrorText;
   }
   else
@@ -557,7 +538,7 @@ const Glib::ustring CAPViewer::aboutStatus(const CAPViewer::eStatus& in) {
 const Glib::ustring CAPViewer::aboutCategory(const CAPViewer::eCategory& in) {
   auto it =  CAPViewer::aboutCategoryMap.find(in);
   if (it == CAPViewer::aboutCategoryMap.end()) {
-    Log::error("Invalid eCategory passed to aboutCategory.");
+    g_error("Invalid eCategory passed to aboutCategory.");
     return CAPViewer::aboutErrorText;
   }
   else
@@ -567,7 +548,7 @@ const Glib::ustring CAPViewer::aboutCategory(const CAPViewer::eCategory& in) {
 const Glib::ustring CAPViewer::aboutResponse(const CAPViewer::eResponse& in) {
   auto it =  CAPViewer::aboutResponseMap.find(in);
   if (it == CAPViewer::aboutResponseMap.end()) {
-    Log::error("Invalid eResponse passed to aboutReponse.");
+    g_error("Invalid eResponse passed to aboutReponse.");
     return CAPViewer::aboutErrorText;
   }
   else
@@ -577,7 +558,7 @@ const Glib::ustring CAPViewer::aboutResponse(const CAPViewer::eResponse& in) {
 const Glib::ustring CAPViewer::aboutUrgency(const CAPViewer::eUrgency& in) {
   auto it =  CAPViewer::aboutUrgencyMap.find(in);
   if (it == CAPViewer::aboutUrgencyMap.end()) {
-    Log::error("Invalid eUrgency passed to aboutUrgency.");
+    g_error("Invalid eUrgency passed to aboutUrgency.");
     return CAPViewer::aboutErrorText;
   }
   else
@@ -587,7 +568,7 @@ const Glib::ustring CAPViewer::aboutUrgency(const CAPViewer::eUrgency& in) {
 const Glib::ustring CAPViewer::aboutSeverity(const CAPViewer::eSeverity& in) {
   auto it =  CAPViewer::aboutSeverityMap.find(in);
   if (it == CAPViewer::aboutSeverityMap.end()) {
-    Log::error("Invalid eSeverity passed to aboutSeverity.");
+    g_error("Invalid eSeverity passed to aboutSeverity.");
     return CAPViewer::aboutErrorText;
   }
   else
@@ -597,7 +578,7 @@ const Glib::ustring CAPViewer::aboutSeverity(const CAPViewer::eSeverity& in) {
 const Glib::ustring CAPViewer::aboutCertainty(const CAPViewer::eCertainty& in) {
   auto it =  CAPViewer::aboutCertaintyMap.find(in);
   if (it == CAPViewer::aboutCertaintyMap.end()) {
-    Log::error("Invalid eCertainty passed to aboutCertainty.");
+    g_error("Invalid eCertainty passed to aboutCertainty.");
     return CAPViewer::aboutErrorText;
   }
   else

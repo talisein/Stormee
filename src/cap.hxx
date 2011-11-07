@@ -1,6 +1,7 @@
 #ifndef CAP_HXX
 #define CAP_HXX
 #include <vector>
+#include <unordered_map>
 #include <map>
 #include <string>
 #include <stdexcept>
@@ -362,9 +363,6 @@ namespace CAPViewer {
     CAP& setScope(const Glib::ustring&);
     eScope getScope() const;
 
-    eUrgency getUrgency() const;
-    eSeverity getSeverity() const;
-
     CAP& setSource(const Glib::ustring&);
     Glib::ustring getSource() const;
     static const Glib::ustring aboutSource();
@@ -451,7 +449,7 @@ namespace CAPViewer {
     {"Private", Private },
   };
 
-  const std::map<Glib::ustring, const CAPViewer::eCategory> stringCategoryMap = {
+  const std::unordered_map<Glib::ustring, const CAPViewer::eCategory, std::hash<std::string>> stringCategoryMap = {
     {"Geo", Geo},
     {"Met", Met},
     {"Safety", Safety},
@@ -463,6 +461,7 @@ namespace CAPViewer {
     {"Transport", Transport},
     {"Infra", Infra},
     {"Cbrne", Cbrne},
+    {"CBRNE", Cbrne},
     {"Other", Other},
   };
 
@@ -481,7 +480,7 @@ namespace CAPViewer {
     {Other, "Other"},
   };
   
-  const std::map<Glib::ustring, const CAPViewer::eResponse> stringResponseMap = {
+  const std::unordered_map<Glib::ustring, const CAPViewer::eResponse, std::hash<std::string>> stringResponseMap = {
     {"Shelter", Shelter},
     {"Evacuate", Evacuate},
     {"Prepare", Prepare},
