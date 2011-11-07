@@ -145,6 +145,14 @@ void termination_handler (int signum __attribute__((unused)))
     xmpp_disconnect(conn);
 }
 
+int handle_ipaws(xmpp_conn_t * const conn __attribute__((unused)),
+                 void * const userdata );
+
+int handle_runfirst(xmpp_conn_t * const conn, void * const userdata) {
+  handle_ipaws(conn, userdata);
+  return 0;
+}
+
 int handle_ipaws(xmpp_conn_t * const conn __attribute__((unused)), 
 		 void * const userdata ) {
   struct soap* soap = (struct soap*) userdata;
@@ -227,6 +235,7 @@ int main(void) {
 
   if (soap) {
     xmpp_timed_handler_add(conn, handle_ipaws, 60000, soap);
+    xmpp_timed_handler_add(conn, handle_runfirst, 1000, soap);
     xmpp_run(ctx);
 
     //printRespList(doPing(soap));
