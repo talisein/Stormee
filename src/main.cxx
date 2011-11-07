@@ -1,8 +1,7 @@
 #include <libintl.h>
-#include <clutter-gtk/clutter-gtk.h>
-#include <gtkmm/main.h>
 #include <glibmm/thread.h>
 #include "application.hxx"
+#include <clutter-gtk/clutter-gtk.h>
 
 int main (int argc, char *argv[])
 {

@@ -80,10 +80,11 @@ int CAPViewer::MessageHandlerFunctor::operator()(xmpp_conn_t * const conn __attr
     g_warning("Error converting incoming alert to text");
   }
 
-  std::shared_ptr<CAPViewer::CAPReaderBuffer> reader = std::shared_ptr<CAPViewer::CAPReaderBuffer>(new CAPViewer::CAPReaderBuffer(buf, buflen));
+  CAPViewer::CAPReaderBuffer* reader = new CAPViewer::CAPReaderBuffer(buf, buflen);
   reader->do_parse();
   
   m_signal_ptr->operator()(reader->getCAPs());
+  delete reader;
   xmpp_free(m_ctx, buf);
 
   return 1;

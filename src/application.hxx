@@ -5,13 +5,12 @@
 #include <glibmm/dispatcher.h>
 #include <glibmm/thread.h>
 #include <glibmm/refptr.h>
+#include <gtkmm/main.h>
 #include <sigc++/connection.h>
 #include <giomm/dbusproxy.h>
 #include "main_window.hxx"
 #include "xmpp.hxx"
 #include "cap.hxx"
-
-
 
 namespace CAPViewer {
   class Application {

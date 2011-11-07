@@ -264,40 +264,26 @@ void CAPViewer::CAPReader::on_end_element(const Glib::ustring& name) {
     break;
   case nPolygon:
     if (!str_buf.empty()) {
-      try {
-	polygon = std::shared_ptr<CAPViewer::Polygon>(new CAPViewer::Polygon(str_buf));
-	area->addPolygon(*polygon);
-      } catch (CAPViewer::CoordinateParseError e) {
-	g_warning("While parsing a polygon parameter, encountered error '%s'", e.what());
-      }
+      polygon = std::shared_ptr<CAPViewer::Polygon>(new CAPViewer::Polygon(str_buf));
+      area->addPolygon(*polygon);
     }
     break;
   case nCircle: 
-    try {
-    circle = std::shared_ptr<CAPViewer::Circle>(new CAPViewer::Circle(str_buf));
-    area->addCircle(*circle);
-    } catch (CAPViewer::CoordinateParseError e) {
-      g_warning("While parsing a circle parameter, encountered error '%s'", e.what());
+    if (!str_buf.empty()) {
+      circle = std::shared_ptr<CAPViewer::Circle>(new CAPViewer::Circle(str_buf));
+      area->addCircle(*circle);
     }
     break;
   case nGeocode: 
     break;
-  case nResourceDesc: 
-      resource->setResourceDesc(str_buf);
+  case nResourceDesc: resource->setResourceDesc(str_buf);
     break;
-  case nMimeType: 
-      resource->setMimeType(str_buf);
+  case nMimeType: resource->setMimeType(str_buf);
     break;
-  case nSize: 
-    try {
-	resource->setSize(str_buf);
-    } catch (CAPViewer::SizeParseError e) {
-      g_warning("Failed to convert resource's size parameter to internal type (%s)", e.what());
-      // TODO: Size is probably sent to max guint64. 
-    }
+  case nSize: resource->setSize(str_buf);
     break;
   case nUri: 
-      resource->setUri(str_buf);
+    resource->setUri(str_buf);
     break;
   case nDerefUri: 
       resource->setDerefUri(str_buf);

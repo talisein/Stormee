@@ -4,11 +4,10 @@
 #include <unordered_map>
 #include <map>
 #include <string>
-#include <stdexcept>
-#include "datetime.hxx"
-#include "vtec.hxx"
 #include <glibmm/ustring.h>
 #include <libintl.h>
+#include "datetime.hxx"
+#include "vtec.hxx"
 
 #define _(String) gettext (String)
 
@@ -17,10 +16,8 @@ namespace CAPViewer {
   enum eStatus { Actual, Exercise, System, Test, Draft};
   enum eMsgType { Alert, Update, Cancel, Ack, Error};
   enum eScope { Public, Restricted, Private };
-  enum eCategory { Geo, Met, Safety, Security, Rescue, Fire, Health, Env, 
-		   Transport, Infra, Cbrne, Other };
-  enum eResponse { Shelter, Evacuate, Prepare, Execute, Avoid, Monitor, 
-		   Assess, AllClear, None };
+  enum eCategory { Geo, Met, Safety, Security, Rescue, Fire, Health, Env, Transport, Infra, Cbrne, Other };
+  enum eResponse { Shelter, Evacuate, Prepare, Execute, Avoid, Monitor, Assess, AllClear, None };
   enum eUrgency { uImmediate, uExpected, uFuture, uPast, uUnknown };
   enum eSeverity { sExtreme, sSevere, sModerate, sMinor, sUnknown };
   enum eCertainty { cObserved, cLikely, cPossible, cUnlikely, cUnknown };
@@ -41,31 +38,6 @@ namespace CAPViewer {
   const Glib::ustring aboutSeverity();
   const Glib::ustring aboutCertainty(const eCertainty&);
   const Glib::ustring aboutCertainty();
-
-
-  /* CoordinateParseError means the input was somehow unexpected or
-     malformed.  For example, when parsing a lat-long pair only a
-     single number is given.
-   */
-  class CoordinateParseError : public std::ios_base::failure { 
-  public: 
-    explicit CoordinateParseError(const std::string& in) throw() : std::ios_base::failure(in) {};
-  };
-
-  class AltitudeParseError : public std::ios_base::failure {
-  public: 
-    explicit AltitudeParseError(const std::string& in) throw() : std::ios_base::failure(in) {};
-  };
-
-  class SizeParseError : public std::ios_base::failure {
-  public: 
-    explicit SizeParseError(const std::string& in) throw() : std::ios_base::failure(in) {};
-  };
-
-  class EnumParseError : public std::out_of_range {
-  public: 
-    explicit EnumParseError(const std::string& in) throw() : std::out_of_range(in) {};
-  };
 
   class Coords {
   public:
