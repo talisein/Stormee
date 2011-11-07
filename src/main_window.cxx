@@ -205,7 +205,7 @@ void CAPViewer::Window::on_combo_changed() {
 	    }
 	    
 	    champlain_view_ensure_layers_visible(cham_view, false);
-	    champlain_view_set_zoom_level(cham_view, 7);
+	    champlain_view_set_zoom_level(cham_view, champlain_view_get_zoom_level(cham_view) + 3);
 
 	    for ( uint i = 0; i < circles.size(); i++ ) {
 	      // TODO: Display circles
@@ -255,8 +255,13 @@ void CAPViewer::Window::display_cap(const CAPViewer::CAP& cap) {
   row[m_ComboBoxModelColumns.m_col_title] = cap.getTitle();
   row[m_ComboBoxModelColumns.m_col_status] = CAPViewer::statusStringMap.find(cap.getStatus())->second;
   row[m_ComboBoxModelColumns.m_col_msgType] = CAPViewer::msgTypeStringMap.find(cap.getMsgType())->second;
-  row[m_ComboBoxModelColumns.m_col_urgency] = CAPViewer::urgencyStringMap.find(cap.getUrgency())->second;
-  row[m_ComboBoxModelColumns.m_col_severity] = CAPViewer::severityStringMap.find(cap.getSeverity())->second;
+  if (cap.getInfos().size() > 0) {
+    row[m_ComboBoxModelColumns.m_col_urgency] = CAPViewer::urgencyStringMap.find(cap.getInfos().front().getUrgency())->second;
+    row[m_ComboBoxModelColumns.m_col_severity] = CAPViewer::severityStringMap.find(cap.getInfos().front().getSeverity())->second;
+  } else {
+    row[m_ComboBoxModelColumns.m_col_urgency] = CAPViewer::urgencyStringMap.find(CAPViewer::eUrgency::uUnknown)->second;
+    row[m_ComboBoxModelColumns.m_col_severity] = CAPViewer::severityStringMap.find(CAPViewer::eSeverity::sUnknown)->second;
+  }
   row[m_ComboBoxModelColumns.m_col_cap] = cap;
   
   if (m_comboBox->get_active_row_number() == -1)
