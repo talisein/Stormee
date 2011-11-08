@@ -30,7 +30,7 @@ libstrophe (You'll have to pull from my github branch of it for now)
 libchamplain
 
 Current features:
-o Read CAP files from local disk and display in the gui
+o Read CAP files from local disk
 o Read CAP files from the XMPP Pub/Sub node
 o stormee-bridge is connected to the IPAWS development server.
   - Alerts are really getting pushed to Stormee as they show up on
@@ -38,14 +38,17 @@ o stormee-bridge is connected to the IPAWS development server.
   - But all these alerts are just test messages.
   - I am now jumping through FEMA's hoops to get access to the
     production server.
-o Provide basic desktop notification
+o Provides basic desktop notification
 
 Planned features:
 o Provide preferences to selecting location, filtering, etc
-o Display <resource> blocks.
 o Polish
+  - Make the combobar colorified and pretty
   - Jazz up notifications
   - Display circles in map.
+  - Display deref'd resources
+  - Display image and other applicable resources inline
+    - Need example CAPs to test before I'll bother with this
 o Multiplatform
 
 Technical Jargon: Stormee is a GTK+3 C++ application that interfaces

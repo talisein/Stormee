@@ -72,6 +72,8 @@ namespace CAPViewer {
     Glib::RefPtr<Gtk::TextBuffer::Tag> centerMonoTag;
     Glib::RefPtr<Gtk::TextBuffer::Tag> leftTag;
     Glib::RefPtr<Gtk::TextBuffer::Tag> leftMonoTag;
+    Glib::RefPtr<Gtk::TextBuffer::Tag> rightTag;
+    Glib::RefPtr<Gtk::TextBuffer::Tag> rightMonoTag;
   };
 
 

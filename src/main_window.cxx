@@ -1,8 +1,7 @@
 #include <iostream>
 #include <gtkmm/linkbutton.h>
 #include <gtkmm/widget.h>
-#include <gtkmm.h>
-//#include <webkit/webkitwebview.h>
+#include <gtkmm/textview.h>
 #include "main_window.hxx"
 #include "util.hxx"
 #include <champlain-gtk/champlain-gtk.h>
@@ -47,17 +46,23 @@ CAPViewer::Window::Window(BaseObjectType* cobject, const Glib::RefPtr<Gtk::Build
   centerMonoTag = Gtk::TextTag::create("Center Mono");
   leftTag = Gtk::TextTag::create("Left Justified");
   leftMonoTag = Gtk::TextTag::create("Left Mono");
+  rightTag = Gtk::TextTag::create("Right Justified");
+  rightMonoTag = Gtk::TextTag::create("Right Mono");
   centerMonoTag->property_justification() = Gtk::Justification::JUSTIFY_CENTER;
   leftTag->property_justification() = Gtk::Justification::JUSTIFY_LEFT;
   leftMonoTag->property_justification() = Gtk::Justification::JUSTIFY_LEFT;
+  rightTag->property_justification() = Gtk::Justification::JUSTIFY_RIGHT;
+  rightMonoTag->property_justification() = Gtk::Justification::JUSTIFY_RIGHT;
   centerMonoTag->property_font() = "Monospace";
   leftMonoTag->property_font() = "Monospace";
+  rightMonoTag->property_font() = "Monospace";
   leftTag->property_size_points() = 14;
   leftTag->property_weight() = Pango::Weight::WEIGHT_BOLD;
   tagtable->add(centerMonoTag);
   tagtable->add(leftTag);
   tagtable->add(leftMonoTag);
-
+  tagtable->add(rightTag);
+  tagtable->add(rightMonoTag);
   show_all_children();
 }
 
@@ -214,8 +219,34 @@ void CAPViewer::Window::on_combo_changed() {
 	    Gtk::Widget* cham = Gtk::manage(Glib::wrap(cham_raw));
 	    m_notebook->append_page(*cham, "Map");
 	  }
-	}
-      } // for Infos()
+	} // for Areas()
+	
+	// Now the resources
+	for (auto resource : info.getResources()) {
+	  auto grid = Gtk::manage(new Gtk::Grid());
+	  grid->attach(*Gtk::manage(new Gtk::Label("Description: ", 1.0F, .5F)), 0, 0, 1, 1);
+	  grid->attach(*Gtk::manage(new Gtk::Label(resource.getResourceDesc(), 0.0F, .5F)), 1, 0, 1, 1);
+	  grid->attach(*Gtk::manage(new Gtk::Label("MIME Type: ", 1.0F, .5F)), 0, 1, 1, 1);
+	  grid->attach(*Gtk::manage(new Gtk::Label(resource.getMimeType(), 0.0F, .5F)), 1, 1, 1, 1);
+	  grid->attach(*Gtk::manage(new Gtk::Label("Size: ", 1.0F, .5F)), 0, 2, 1, 1);
+	  grid->attach(*Gtk::manage(new Gtk::Label(Glib::ustring::compose("%1 bytes", resource.getSize()), 0.0F, .5F)), 1, 2, 1, 1);
+	  if (resource.getDerefUri().size() == 0) {
+	    grid->attach(*Gtk::manage(new Gtk::Label("URL: ", 1.0F, .5F)), 0, 3, 1, 1);
+	    // There's some bug in Fedora 16's gtkmm where using the 1 var constructor won't link
+	    auto mmlb = Gtk::manage(new Gtk::LinkButton(resource.getUri(), resource.getUri()));
+	    mmlb->set_relief(Gtk::ReliefStyle::RELIEF_NONE);
+	    mmlb->set_alignment(0.0F, .5F);
+	    grid->attach(*mmlb, 1, 3, 1, 1);
+	  } else {
+	    // TODO: Implement
+	    grid->attach(*Gtk::manage(new Gtk::Label("Dereferenced URIs are not supported")), 0, 3, 2, 1);
+	  }
+	  // TODO: Check the digest
+	  m_notebook->append_page(*grid, "Resource");
+	
+	} // for Resources()
+  
+    } // for Infos()
 
       keyValueTreeView->expand_all();
       m_notebook->show_all_children();
