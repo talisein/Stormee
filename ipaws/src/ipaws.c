@@ -1,3 +1,4 @@
+#include <error.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
@@ -206,11 +207,21 @@ messages_t* getMessages(struct soap* soap, char* date) {
 
 	 // Get the latest expiration date
 	 for(int j = 0; j < msgs->ns4__alert[i].__sizeinfo; j++) {
-	   if (msg_t->expires[i] == NULL) {
+	   if (msg_t->expires[i] == NULL) { // Don't alloc more than once
 	     msg_t->expires[i] = malloc(sizeof(time_t));
-	     if (msg_t->expires[i])
-	       *(msg_t->expires[i]) = *(msgs->ns4__alert[i].info[j].expires);
-	     else {
+	     if (msg_t->expires[i]) {
+	       if (msgs->ns4__alert[i].info) {
+		 if (msgs->ns4__alert[i].info[j].expires) {
+		   *(msg_t->expires[i]) = *(msgs->ns4__alert[i].info[j].expires);
+		 } else {
+		   error(0, 0, "Allocated info doesn't have expires field");
+		   free(msg_t->expires[i]);
+		   msg_t->expires[i] = NULL;
+		 } 
+	       } else {
+		 error(0, 0, "Despite the sizeinfo %d, no allocation at info %d", msgs->ns4__alert[i].__sizeinfo, j);
+	       }
+	     } else {
 	       perror("Incomplete conversion of alert to text, discarding");
 	       free(msg_t->alerts[i]);
 	       free(msg_t->ids[i]);
