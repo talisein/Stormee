@@ -18,6 +18,16 @@ provided by FEMA. The second component, Stormee, accesses the XMPP
 Pub/Sub node and accepts alerts based on the user's location and
 filter preferences.
 
+UPDATE: It turns out IPAWS has no mechanism to retrieve alerts from
+every publishing agency. And to retrieve alerts from any one agency,
+one has to, in effect, be a member of that agency. So IPAWS aggregates
+alerts for distribution to the general public, but does not actually
+have any means to distribute them to the general public. Which is
+stupid. Supposedly there will one day in mid-2012 be an RSS feed
+available to the public. Until then, I'll be developing more
+sporadically using California's EDIS feed. But I'm pretty bummed out
+at the moment.
+
 Stormee is in pre-alpha development.
 
 Dependancies:
