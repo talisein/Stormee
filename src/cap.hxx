@@ -550,7 +550,7 @@ namespace CAPViewer {
   };
 
   const std::map<const CAPViewer::eCategory, const Glib::ustring> aboutCategoryMap = {
-    {Geo, _("Geophysical (inc. landslide")}, 
+    {Geo, _("Geophysical (inc. landslide)")}, 
     {Met, _("Meteorological (inc. flood)")},
     {Safety, _("General emergency and public safety")},
     {Security, _("Law enforcement, military, homeland and local/private security")},

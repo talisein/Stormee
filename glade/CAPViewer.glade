@@ -1,6 +1,48 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <requires lib="gtk+" version="2.16"/>
+  <!-- interface-requires gtk+ 3.0 -->
+  <object class="GtkAction" id="action1"/>
+  <object class="GtkAboutDialog" id="aboutDialog">
+    <property name="can_focus">False</property>
+    <property name="border_width">5</property>
+    <property name="type">popup</property>
+    <property name="title" translatable="yes">About Stormee</property>
+    <property name="modal">True</property>
+    <property name="window_position">center-always</property>
+    <property name="type_hint">dialog</property>
+    <property name="program_name">Stormee</property>
+    <property name="version">0.6 (Alpha)</property>
+    <property name="copyright" translatable="yes">Copyright (C) 2011 Andrew Potter</property>
+    <property name="website">http://www.stormee.org</property>
+    <property name="website_label">www.stormee.org</property>
+    <property name="authors">Andrew Potter</property>
+    <property name="artists">Alan Dill
+</property>
+    <property name="wrap_license">True</property>
+    <property name="license_type">gpl-3-0</property>
+    <child internal-child="vbox">
+      <object class="GtkBox" id="aboutdialog-vbox1">
+        <property name="can_focus">False</property>
+        <property name="orientation">vertical</property>
+        <property name="spacing">2</property>
+        <child internal-child="action_area">
+          <object class="GtkButtonBox" id="aboutdialog-action_area1">
+            <property name="can_focus">False</property>
+            <property name="layout_style">end</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="pack_type">end</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <placeholder/>
+        </child>
+      </object>
+    </child>
+  </object>
   <object class="GtkAccelGroup" id="accelgroup1"/>
   <object class="GtkListStore" id="alertListStore"/>
   <object class="GtkListStore" id="comboBoxListStore">
@@ -36,10 +78,12 @@
   <object class="GtkListStore" id="liststore1"/>
   <object class="GtkListStore" id="liststore2"/>
   <object class="GtkWindow" id="mainWindow">
-    <property name="width_request">800</property>
     <property name="height_request">600</property>
+    <property name="visible">True</property>
     <property name="can_focus">False</property>
-    <property name="title" translatable="yes">Common Alert Protocol Viewer</property>
+    <property name="title" translatable="yes">Stormee</property>
+    <property name="default_width">800</property>
+    <property name="default_height">600</property>
     <accel-groups>
       <group name="accelgroup1"/>
     </accel-groups>
@@ -133,6 +177,7 @@
                         <property name="image">image1</property>
                         <property name="use_stock">False</property>
                         <property name="accel_group">accelgroup1</property>
+                        <property name="always_show_image">True</property>
                         <signal name="activate" handler="activateOpenFileMenu" swapped="no"/>
                       </object>
                     </child>
@@ -160,6 +205,7 @@
                         <property name="use_underline">True</property>
                         <property name="use_stock">True</property>
                         <property name="accel_group">accelgroup1</property>
+                        <property name="always_show_image">True</property>
                       </object>
                     </child>
                     <child>
@@ -171,6 +217,7 @@
                         <property name="use_underline">True</property>
                         <property name="use_stock">True</property>
                         <property name="accel_group">accelgroup1</property>
+                        <property name="always_show_image">True</property>
                       </object>
                     </child>
                     <child>
@@ -182,6 +229,7 @@
                         <property name="use_underline">True</property>
                         <property name="use_stock">True</property>
                         <property name="accel_group">accelgroup1</property>
+                        <property name="always_show_image">True</property>
                       </object>
                     </child>
                     <child>
@@ -193,6 +241,7 @@
                         <property name="use_underline">True</property>
                         <property name="use_stock">True</property>
                         <property name="accel_group">accelgroup1</property>
+                        <property name="always_show_image">True</property>
                       </object>
                     </child>
                   </object>
@@ -224,6 +273,31 @@
                 </child>
               </object>
             </child>
+            <child>
+              <object class="GtkMenuItem" id="aboutMenuItem">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="use_action_appearance">False</property>
+                <property name="label" translatable="yes" context="Menubar">About</property>
+                <child type="submenu">
+                  <object class="GtkMenu" id="aboutMenu">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <child>
+                      <object class="GtkImageMenuItem" id="imagemenuitem15">
+                        <property name="label">gtk-about</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="use_action_appearance">False</property>
+                        <property name="use_underline">True</property>
+                        <property name="use_stock">True</property>
+                        <property name="always_show_image">True</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </child>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -242,7 +316,9 @@
                 <child>
                   <object class="GtkComboBox" id="comboBox2">
                     <property name="visible">True</property>
-                    <property name="can_focus">False</property>
+                    <property name="can_focus">True</property>
+                    <property name="is_focus">True</property>
+                    <property name="has_default">True</property>
                     <signal name="changed" handler="comboBox2_changed_cb" swapped="no"/>
                   </object>
                   <packing>
@@ -300,6 +376,7 @@
                       <object class="GtkNotebook" id="notebook">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
+                        <property name="show_border">False</property>
                         <property name="scrollable">True</property>
                         <signal name="switch-page" handler="changepage_cb" swapped="no"/>
                         <child>
@@ -344,52 +421,6 @@
               <object class="GtkHBox" id="bottomHbox">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <child>
-                  <object class="GtkButton" id="prevButton">
-                    <property name="label">gtk-go-back</property>
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="receives_default">True</property>
-                    <property name="use_action_appearance">False</property>
-                    <property name="use_stock">True</property>
-                    <signal name="clicked" handler="onPrevClick" swapped="no"/>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">0</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkComboBox" id="comboBox">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <property name="model">comboBoxListStore</property>
-                    <signal name="changed" handler="combobox_changed_cb" swapped="no"/>
-                  </object>
-                  <packing>
-                    <property name="expand">True</property>
-                    <property name="fill">True</property>
-                    <property name="position">1</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkButton" id="nextButton">
-                    <property name="label">gtk-go-forward</property>
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="receives_default">True</property>
-                    <property name="use_action_appearance">False</property>
-                    <property name="use_stock">True</property>
-                    <property name="image_position">right</property>
-                    <signal name="clicked" handler="onNextClick" swapped="no"/>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">2</property>
-                  </packing>
-                </child>
                 <child>
                   <object class="GtkStatusbar" id="statusbar1">
                     <property name="width_request">15</property>

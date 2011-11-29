@@ -9,6 +9,8 @@
 #include <gtkmm/notebook.h>
 #include <gtkmm/texttagtable.h>
 #include <gtkmm/textbuffer.h>
+#include <gtkmm/aboutdialog.h>
+#include <gtkmm/imagemenuitem.h>
 #include "cap.hxx"
 
 namespace CAPViewer {
@@ -21,7 +23,8 @@ namespace CAPViewer {
 
   protected:
     void on_button_quit();
-    
+    void on_aboutDialog();
+
     class ComboBoxModelColumns : public Gtk::TreeModel::ColumnRecord {
     public:
       
@@ -68,6 +71,9 @@ namespace CAPViewer {
     Gtk::ComboBox* m_comboBox;
     Gtk::TreeView* keyValueTreeView;
     Gtk::Notebook* m_notebook;
+    Gtk::AboutDialog* m_aboutDialog;
+    Gtk::ImageMenuItem* m_aboutMenuItem;
+
     Glib::RefPtr<Gtk::TextTagTable> tagtable;
     Glib::RefPtr<Gtk::TextBuffer::Tag> centerMonoTag;
     Glib::RefPtr<Gtk::TextBuffer::Tag> leftTag;

@@ -9,6 +9,11 @@
 CAPViewer::Window::Window(BaseObjectType* cobject, const Glib::RefPtr<Gtk::Builder>& refBuilder) : Gtk::Window(cobject)
 {
 
+  // Setup about dialog
+  refBuilder->get_widget("aboutDialog", m_aboutDialog);
+  refBuilder->get_widget("imagemenuitem15", m_aboutMenuItem);
+  m_aboutMenuItem->signal_activate().connect(sigc::mem_fun(*this, &CAPViewer::Window::on_aboutDialog));
+
   // Setup the Tree View
   refBuilder->get_widget("keyValueTreeView", keyValueTreeView);
   m_refKeyValueModel = Gtk::TreeStore::create(m_TreeViewModelColumns);
@@ -64,6 +69,11 @@ CAPViewer::Window::Window(BaseObjectType* cobject, const Glib::RefPtr<Gtk::Build
   tagtable->add(rightTag);
   tagtable->add(rightMonoTag);
   show_all_children();
+}
+
+void CAPViewer::Window::on_aboutDialog() {
+  m_aboutDialog->run();
+  m_aboutDialog->hide();
 }
 
 bool CAPViewer::Window::m_query_tooltip(int x, int y, bool, const Glib::RefPtr<Gtk::Tooltip>& tooltip) {
@@ -187,8 +197,12 @@ void CAPViewer::Window::on_combo_changed() {
 	Gtk::TextView* tv = Gtk::manage(new Gtk::TextView(tb));
 	tv->set_editable(false);
 	tv->set_wrap_mode(Gtk::WrapMode::WRAP_WORD_CHAR);
-	m_notebook->append_page(*tv, "Info");
-
+	auto tv_sw = Gtk::manage(new Gtk::ScrolledWindow());
+	tv_sw->set_policy(Gtk::PolicyType::POLICY_NEVER, Gtk::PolicyType::POLICY_AUTOMATIC);
+	tv_sw->set_min_content_width(0);
+	tv_sw->add(*tv);
+	m_notebook->append_page(*tv_sw, "Info");
+	
 	// Second, the the maps
 	for ( auto area : info.getAreas() ) {
 	  auto polys = area.getPolygons();
