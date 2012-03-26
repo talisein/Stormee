@@ -75,6 +75,8 @@ class CAPTray:
         gobject.timeout_add_seconds(60*10, self.rssTimer_cb)
         gobject.timeout_add(100, self.startup_cb)
     
+	self.execute_cb(None, None, None)
+
     def execute_cb(self, widget, event, data=None):
         window = Window(self)
         self.windows.append(window)
