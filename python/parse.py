@@ -289,14 +289,19 @@ def ReadCAP(file):
                 for area in info.area:
                     a = cap.Area()
                     vtec = cap.VTEC()
-                    if not vtec.populateVTEC(area.areaDesc.text):
-                        a.setAreaDesc(area.areaDesc.text)
-                    else:
-                        if i.vtec is None:
-                            i.vtec = vtec
+
+                    try:
+                        if not vtec.populateVTEC(area.areaDesc.text):
+                            vtec.populateVTEC(area.areaDesc.text)
                         else:
-                            if vtec.hasHVTEC and not i.vtec.hasHVTEC:
-                                i.vtec.combine(vtec)
+                            if i.vtec is None:
+                                i.vtec = vtec
+                            else:
+                                if vtec.hasHVTEC and not i.vtec.hasHVTEC:
+                                    i.vtec.combine(vtec)
+                    except ValueError:
+                        a.setAreaDesc(area.areaDesc.text)
+
                     if hasattr(area, 'polygon'):
                         for polygon in area.polygon:
                             a.addPolygon(polygon.text)
