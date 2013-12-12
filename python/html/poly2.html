@@ -10,21 +10,29 @@
       fillOpacity: 0.35
     });
 
+
+	var contentString = '<div id="content">' +
+      '<div id="siteNotice">'+
+      '</div>'+
+      '<h1 id="firstHeading" class="firstHeading">Area Description</h1>'+
+      '<div id="bodyContent">'+
+      'INFOWINDOW_CONTENT' +
+      '</div>' +
+      '</div>';
+
+    var infowindow = new google.maps.InfoWindow({
+        content: contentString,
+        position: triangleCoords[1]
+    });
+    
 	bermudaTriangle.setMap(map);
-	google.maps.event.addListener(bermudaTriangle, 'click', showArrays);
-
-  }
-  
-	function showArrays(event) {
-		var contentString = "<b>Area Description:</b><br />INFOWINDOW_CONTENT";
-		infowindow.setContent(contentString);
-		infowindow.setPosition(event.latLng);
-		infowindow.open(map);
-	}
-
+	google.maps.event.addListener(bermudaTriangle, 'click', function() {
+        infowindow.open(map);
+    });
+}
 </script>
 </head>
 <body onload="initialize()">
-  <div id="map_canvas"></div>
+  <div id="map-canvas"></div>
 </body>
 </html>
